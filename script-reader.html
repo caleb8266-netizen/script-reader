@@ -1275,14 +1275,20 @@ pdfViewport.addEventListener('click', (e) => {
 // ── Highlight bar positioning ─────────────────────────────
 function findPdfEntry(lineText) {
   if (!lineText || !pdfTextMap.length) return null;
-  const words = lineText.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  // Use only meaningful words (skip short filler words for better matching)
+  const words = lineText.trim().toLowerCase()
+    .split(/\s+/)
+    .filter(w => w.length > 2)
+    .slice(0, 8); // use first 8 meaningful words max
   if (!words.length) return null;
+
   let best = null, bestScore = 0;
   pdfTextMap.forEach(entry => {
     const et = entry.text.toLowerCase();
     const hits = words.filter(w => et.includes(w)).length;
     const score = hits / words.length;
-    if (score > bestScore && score > 0.28) { bestScore = score; best = entry; }
+    // Higher threshold (0.5) for tighter matching — avoids false positives on dense pages
+    if (score > bestScore && score > 0.5) { bestScore = score; best = entry; }
   });
   return best;
 }
@@ -1292,37 +1298,23 @@ function positionHighlight(idx) {
   const line = lines[idx];
   if (!line || !line.display) return;
 
-  // If this line belongs to a speech block, span from blockStart to blockEnd
-  const start = (line.blockStart !== undefined) ? line.blockStart : idx;
-  const end   = (line.blockEnd   !== undefined) ? line.blockEnd   : idx;
+  // Find the PDF entry for THIS specific line only — no block spanning
+  const entry = findPdfEntry(line.display);
+  if (!entry) return;
 
-  // Find PDF entries for the start line (char name) and end line (last dialogue)
-  const entryTop = findPdfEntry(lines[start]?.display);
-  const entryBot = findPdfEntry(lines[end]?.display);
-
-  // Use current line entry as fallback
-  const entryCur = findPdfEntry(line.display);
-
-  const topEntry = entryTop || entryCur;
-  const botEntry = entryBot || entryCur;
-
-  if (!topEntry) return;
-
-  const barTop = topEntry.absY;
-  const barBot = botEntry ? (botEntry.absY + Math.max(botEntry.absH, 18)) : (barTop + 24);
-  const barH   = Math.max(barBot - barTop, 22);
+  // Clamp bar height to a single line — never more than 2x the line height
+  const lineH = Math.min(Math.max(entry.absH, 18), 48);
 
   highlightBar.style.display = 'block';
-  highlightBar.style.top    = barTop + 'px';
-  highlightBar.style.height = barH + 'px';
+  highlightBar.style.top    = (entry.absY - 3) + 'px';
+  highlightBar.style.height = (lineH + 6) + 'px';
 
-  // Scroll to keep the current spoken line (not block top) centered
-  const curEntry = entryCur || topEntry;
-  const targetScroll = curEntry.absY - pdfViewport.clientHeight / 2 + curEntry.absH / 2;
+  // Scroll so highlighted line sits at 40% from top (comfortable reading position)
+  const targetScroll = entry.absY - (pdfViewport.clientHeight * 0.4);
   pdfViewport.scrollTo({ top: targetScroll, behavior: 'smooth' });
 
   const totalPages = pdfDoc ? pdfDoc.numPages : 1;
-  if (pageInd) pageInd.textContent = `${topEntry.pageIdx + 1} / ${totalPages}`;
+  if (pageInd) pageInd.textContent = `${entry.pageIdx + 1} / ${totalPages}`;
 }
 
 // ── Tap on text overlay ───────────────────────────────────

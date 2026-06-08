@@ -646,31 +646,104 @@ window.addEventListener('load', () => {
   if (savedMode) setVoiceMode(savedMode);
 });
 
-async function speakElevenLabs(text, onEnd) {
+// ── ElevenLabs prefetch queue ────────────────────────────
+// Pre-fetches next line's audio while current line plays
+// so there's no gap between lines.
+let elAudioQueue = {};   // { lineIdx: { url, audio } }
+let elFetching   = new Set();
+
+async function fetchELAudio(idx) {
+  if (!lines[idx] || !lines[idx].display) return;
+  if (elAudioQueue[idx] || elFetching.has(idx)) return;
   const key = elKey.value.trim();
   const vid = elVoiceSel.value;
-  if (!key || !vid) { showToast('Set EL key & voice'); onEnd(); return; }
-  setDot('loading');
+  if (!key || !vid) return;
+  elFetching.add(idx);
   try {
+    const text = lines[idx].speech || lines[idx].display;
     const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}/stream`, {
       method:'POST',
       headers:{'xi-api-key':key,'Content-Type':'application/json'},
+      mode:'cors',
       body: JSON.stringify({
         text, model_id: elModel.value,
         voice_settings:{ stability:.45, similarity_boost:.82, style:.35, use_speaker_boost:true }
       })
     });
-    if (!r.ok) throw new Error();
+    if (!r.ok) throw new Error('EL '+r.status);
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.volume = +volR.value;
+    audio.playbackRate = +rateR.value;
+    // Preload into buffer
+    audio.load();
+    elAudioQueue[idx] = { url, audio };
+  } catch(e) {
+    console.error('EL prefetch failed for line', idx, e);
+  } finally {
+    elFetching.delete(idx);
+  }
+}
+
+function clearELQueue() {
+  Object.values(elAudioQueue).forEach(({url}) => URL.revokeObjectURL(url));
+  elAudioQueue = {};
+  elFetching.clear();
+}
+
+async function speakElevenLabs(idx, onEnd) {
+  const key = elKey.value.trim();
+  const vid = elVoiceSel.value;
+  if (!key || !vid) { showToast('Set EL key & voice'); onEnd(); return; }
+
+  // Prefetch next 2 lines in background immediately
+  const nextLines = [idx+1, idx+2].filter(i => i < lines.length && lines[i]?.display);
+  nextLines.forEach(i => fetchELAudio(i));
+
+  // Check if already prefetched
+  if (elAudioQueue[idx]) {
+    const { url, audio } = elAudioQueue[idx];
+    delete elAudioQueue[idx];
+    currentAudio = audio;
+    currentAudio.volume = +volR.value;
+    currentAudio.playbackRate = +rateR.value;
+    setDot('active');
+    try { await currentAudio.play(); } catch(e) {}
+    currentAudio.onended = () => { URL.revokeObjectURL(url); onEnd(); };
+    currentAudio.onerror = () => { URL.revokeObjectURL(url); onEnd(); };
+    return;
+  }
+
+  // Not prefetched — fetch now
+  setDot('loading');
+  try {
+    const text = lines[idx].speech || lines[idx].display;
+    const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}/stream`, {
+      method:'POST',
+      headers:{'xi-api-key':key,'Content-Type':'application/json'},
+      mode:'cors',
+      body: JSON.stringify({
+        text, model_id: elModel.value,
+        voice_settings:{ stability:.45, similarity_boost:.82, style:.35, use_speaker_boost:true }
+      })
+    });
+    if (!r.ok) throw new Error('EL '+r.status);
     const blob = await r.blob();
     const url = URL.createObjectURL(blob);
     currentAudio = new Audio(url);
     currentAudio.volume = +volR.value;
     currentAudio.playbackRate = +rateR.value;
     setDot('active');
-    currentAudio.play();
+    try { await currentAudio.play(); } catch(e) {}
     currentAudio.onended = () => { URL.revokeObjectURL(url); onEnd(); };
     currentAudio.onerror = () => { URL.revokeObjectURL(url); onEnd(); };
-  } catch { setDot('idle'); showToast('EL error — check quota'); onEnd(); }
+  } catch(e) {
+    console.error('EL speak error:', e);
+    setDot('idle');
+    showToast('EL error — check quota/key');
+    onEnd();
+  }
 }
 
 // ── File handling ─────────────────────────────────────────
@@ -1055,6 +1128,10 @@ function buildLines(text) {
 
   currentIdx = -1;
   updateProgress();
+  // Prefetch first 3 lines so playback starts instantly
+  if (voiceMode === 'elevenlabs') {
+    [0,1,2].forEach(i => { if(lines[i]?.display) fetchELAudio(i); });
+  }
 }
 
 function buildLinesFromText(text) {
@@ -1159,6 +1236,7 @@ function setPlayBtn(playing) {
 function stopSpeech() {
   speechSynthesis.cancel();
   if (currentAudio) { currentAudio.pause(); currentAudio.src=''; currentAudio=null; }
+  clearELQueue();
   isPlaying = false;
   setDot('idle');
   setPlayBtn(false);
@@ -1204,7 +1282,14 @@ function speakFrom(idx) {
   const speechText = line.speech || line.display;
 
   if (voiceMode==='elevenlabs') {
-    speakElevenLabs(speechText, () => { if(isPlaying) speakFrom(idx+1); });
+    // Prefetch current line if not already in queue
+    if (!elAudioQueue[idx] && !elFetching.has(idx)) {
+      fetchELAudio(idx).then(() => {
+        if (isPlaying && currentIdx === idx) speakElevenLabs(idx, () => { if(isPlaying) speakFrom(idx+1); });
+      });
+    } else {
+      speakElevenLabs(idx, () => { if(isPlaying) speakFrom(idx+1); });
+    }
   } else {
     const dyn = getDynamics(line.type, +rateR.value, +pitchR.value);
     const doSpeak = () => {

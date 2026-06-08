@@ -66,7 +66,7 @@ body{font-family:'Inter',sans-serif;color:var(--text);display:flex;flex-directio
 
 /* ── LIBRARY ── */
 #libraryScreen{
-  position:fixed;inset:0;z-index:900;
+  position:fixed;inset:0;z-index:1100;
   background:var(--bg);
   display:none;flex-direction:column;
   padding-top:max(0px,env(safe-area-inset-top));
@@ -575,35 +575,75 @@ function setVoiceMode(mode) {
   document.getElementById('modeEL').classList.toggle('active', mode==='elevenlabs');
   document.getElementById('browserPanel').style.display = mode==='browser' ? '' : 'none';
   document.getElementById('elPanel').style.display = mode==='elevenlabs' ? '' : 'none';
+  localStorage.setItem('voice_mode', mode);
 }
 
 // ── ElevenLabs ───────────────────────────────────────────
-async function fetchELVoices() {
+async function fetchELVoices(silent) {
   const key = elKey.value.trim();
-  if (!key) { showToast('Enter your API key'); return; }
-  showToast('Fetching voices…');
+  if (!key) { if(!silent) showToast('Enter your API key'); return; }
+  if (!silent) showToast('Fetching voices…');
   try {
-    const r = await fetch('https://api.elevenlabs.io/v1/voices', { headers: {'xi-api-key': key} });
-    if (!r.ok) throw new Error();
+    const r = await fetch('https://api.elevenlabs.io/v1/voices', {
+      method: 'GET',
+      headers: {
+        'xi-api-key': key,
+        'Accept': 'application/json',
+      },
+      mode: 'cors',
+    });
+    if (!r.ok) {
+      const err = await r.text();
+      console.error('EL voices error:', r.status, err);
+      if (!silent) showToast('Failed — check API key ('+r.status+')');
+      return;
+    }
     const data = await r.json();
-    elVoices = data.voices;
+    elVoices = data.voices || [];
+    if (!elVoices.length) { if(!silent) showToast('No voices found'); return; }
     elVoiceSel.innerHTML = '';
     elVoices.forEach(v => {
       const o = document.createElement('option');
       o.value = v.voice_id;
-      o.textContent = `${v.name} — ${v.labels?.accent || v.labels?.description || ''}`;
+      o.textContent = `${v.name} — ${v.labels?.accent || v.labels?.description || v.category || ''}`;
       elVoiceSel.appendChild(o);
     });
-    const pref = elVoices.findIndex(v => /liam|adam|rachel|bella|josh/i.test(v.name));
-    if (pref >= 0) elVoiceSel.selectedIndex = pref;
+    // Restore saved voice preference
+    const savedVoice = localStorage.getItem('el_voice');
+    if (savedVoice) {
+      const idx = elVoices.findIndex(v => v.voice_id === savedVoice);
+      if (idx >= 0) elVoiceSel.selectedIndex = idx;
+    } else {
+      const pref = elVoices.findIndex(v => /liam|adam|rachel|bella|josh/i.test(v.name));
+      if (pref >= 0) elVoiceSel.selectedIndex = pref;
+    }
     localStorage.setItem('el_key', key);
-    showToast(`${elVoices.length} voices loaded ✓`);
-  } catch { showToast('Failed — check API key'); }
+    if (!silent) showToast(`${elVoices.length} voices loaded ✓`);
+  } catch(e) {
+    console.error('EL fetch error:', e);
+    if (!silent) showToast('Network error — check connection');
+  }
 }
 
+// Save voice selection when changed
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('elVoiceSel').addEventListener('change', () => {
+    const v = elVoices[document.getElementById('elVoiceSel').selectedIndex];
+    if (v) localStorage.setItem('el_voice', v.voice_id);
+  });
+});
+
 window.addEventListener('load', () => {
+  // Restore API key
   const saved = localStorage.getItem('el_key');
-  if (saved) elKey.value = saved;
+  if (saved) {
+    elKey.value = saved;
+    // Auto-load voices silently if key exists
+    fetchELVoices(true);
+  }
+  // Restore voice mode
+  const savedMode = localStorage.getItem('voice_mode');
+  if (savedMode) setVoiceMode(savedMode);
 });
 
 async function speakElevenLabs(text, onEnd) {

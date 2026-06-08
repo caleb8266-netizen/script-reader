@@ -1238,6 +1238,7 @@ function buildLines(text) {
   }
 
   currentIdx = -1;
+  resetPdfCursor();
   updateProgress();
   // Prefetch first 3 lines so playback starts instantly
   if (voiceMode === 'elevenlabs') {
@@ -1273,22 +1274,69 @@ pdfViewport.addEventListener('click', (e) => {
 });
 
 // ── Highlight bar positioning ─────────────────────────────
-function findPdfEntry(lineText) {
+// ── PDF cursor — tracks our position in pdfTextMap so we always search forward
+let pdfCursor = 0; // index into pdfTextMap — only moves forward
+
+function resetPdfCursor() { pdfCursor = 0; }
+
+function findPdfEntryForward(lineText) {
+  // Search forward from pdfCursor — never jump backward
+  // This stops the bar bouncing up when similar text appears earlier in the PDF
   if (!lineText || !pdfTextMap.length) return null;
-  // Use only meaningful words (skip short filler words for better matching)
+
   const words = lineText.trim().toLowerCase()
     .split(/\s+/)
     .filter(w => w.length > 2)
-    .slice(0, 8); // use first 8 meaningful words max
+    .slice(0, 8);
   if (!words.length) return null;
 
+  // First try forward from cursor within a reasonable window
+  const windowSize = 40; // look up to 40 entries ahead before giving up
+  const searchEnd  = Math.min(pdfCursor + windowSize, pdfTextMap.length);
+
+  let best = null, bestScore = 0, bestIdx = -1;
+  for (let i = pdfCursor; i < searchEnd; i++) {
+    const et = pdfTextMap[i].text.toLowerCase();
+    const hits = words.filter(w => et.includes(w)).length;
+    const score = hits / words.length;
+    if (score > bestScore && score > 0.45) {
+      bestScore = score; best = pdfTextMap[i]; bestIdx = i;
+    }
+  }
+
+  // If nothing found in window, do a full forward search from cursor
+  // (handles gaps like page breaks or skipped lines)
+  if (!best) {
+    for (let i = pdfCursor; i < pdfTextMap.length; i++) {
+      const et = pdfTextMap[i].text.toLowerCase();
+      const hits = words.filter(w => et.includes(w)).length;
+      const score = hits / words.length;
+      if (score > bestScore && score > 0.45) {
+        bestScore = score; best = pdfTextMap[i]; bestIdx = i;
+      }
+    }
+  }
+
+  // Advance cursor to just past the matched entry so next search starts here
+  if (bestIdx >= 0) pdfCursor = bestIdx + 1;
+
+  return best;
+}
+
+// Keep old findPdfEntry for tap zone building (needs full search)
+function findPdfEntry(lineText) {
+  if (!lineText || !pdfTextMap.length) return null;
+  const words = lineText.trim().toLowerCase()
+    .split(/\s+/)
+    .filter(w => w.length > 2)
+    .slice(0, 8);
+  if (!words.length) return null;
   let best = null, bestScore = 0;
   pdfTextMap.forEach(entry => {
     const et = entry.text.toLowerCase();
     const hits = words.filter(w => et.includes(w)).length;
     const score = hits / words.length;
-    // Higher threshold (0.5) for tighter matching — avoids false positives on dense pages
-    if (score > bestScore && score > 0.5) { bestScore = score; best = entry; }
+    if (score > bestScore && score > 0.45) { bestScore = score; best = entry; }
   });
   return best;
 }
@@ -1298,19 +1346,19 @@ function positionHighlight(idx) {
   const line = lines[idx];
   if (!line || !line.display) return;
 
-  // Find the PDF entry for THIS specific line only — no block spanning
-  const entry = findPdfEntry(line.display);
+  // Use forward-only search to prevent bar jumping backward
+  const entry = findPdfEntryForward(line.display);
   if (!entry) return;
 
-  // Clamp bar height to a single line — never more than 2x the line height
-  const lineH = Math.min(Math.max(entry.absH, 18), 48);
+  // Single line height — capped so it never expands beyond one row
+  const lineH = Math.min(Math.max(entry.absH, 18), 46);
 
   highlightBar.style.display = 'block';
-  highlightBar.style.top    = (entry.absY - 3) + 'px';
-  highlightBar.style.height = (lineH + 6) + 'px';
+  highlightBar.style.top    = (entry.absY - 2) + 'px';
+  highlightBar.style.height = (lineH + 4) + 'px';
 
-  // Scroll so highlighted line sits at 40% from top (comfortable reading position)
-  const targetScroll = entry.absY - (pdfViewport.clientHeight * 0.4);
+  // Scroll line to 38% from top — comfortable reading position
+  const targetScroll = entry.absY - (pdfViewport.clientHeight * 0.38);
   pdfViewport.scrollTo({ top: targetScroll, behavior: 'smooth' });
 
   const totalPages = pdfDoc ? pdfDoc.numPages : 1;
@@ -1322,6 +1370,9 @@ function onTap(idx) {
   if (!lines.length) return;
   stopSpeech();
   currentIdx = idx;
+  // Reset cursor to search from beginning of PDF up to tapped position
+  // so highlight finds the right spot
+  resetPdfCursor();
   isPlaying = true;
   speakFrom(idx);
 }

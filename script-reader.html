@@ -415,7 +415,7 @@ input[type=range]{flex:1;accent-color:var(--accent);height:4px;cursor:pointer;}
         <div class="fc-row">
           <span class="fc-label">Speed</span>
           <div class="slider-row">
-            <input type="range" id="rateR" min=".5" max="2.5" step=".05" value=".95"/>
+            <input type="range" id="rateR" min=".5" max="3.0" step=".05" value="1.15"/>
             <span class="sval" id="rateV">0.95×</span>
           </div>
         </div>
@@ -575,7 +575,7 @@ function setVoiceMode(mode) {
   document.getElementById('modeEL').classList.toggle('active', mode==='elevenlabs');
   document.getElementById('browserPanel').style.display = mode==='browser' ? '' : 'none';
   document.getElementById('elPanel').style.display = mode==='elevenlabs' ? '' : 'none';
-  localStorage.setItem('voice_mode', mode);
+  persistSave('voice_mode', mode);
 }
 
 // ── ElevenLabs ───────────────────────────────────────────
@@ -609,7 +609,7 @@ async function fetchELVoices(silent) {
       elVoiceSel.appendChild(o);
     });
     // Restore saved voice preference
-    const savedVoice = localStorage.getItem('el_voice');
+    const savedVoice = persistLoad('el_voice');
     if (savedVoice) {
       const idx = elVoices.findIndex(v => v.voice_id === savedVoice);
       if (idx >= 0) elVoiceSel.selectedIndex = idx;
@@ -617,7 +617,7 @@ async function fetchELVoices(silent) {
       const pref = elVoices.findIndex(v => /liam|adam|rachel|bella|josh/i.test(v.name));
       if (pref >= 0) elVoiceSel.selectedIndex = pref;
     }
-    localStorage.setItem('el_key', key);
+    persistSave('el_key', key);
     if (!silent) showToast(`${elVoices.length} voices loaded ✓`);
   } catch(e) {
     console.error('EL fetch error:', e);
@@ -629,20 +629,49 @@ async function fetchELVoices(silent) {
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('elVoiceSel').addEventListener('change', () => {
     const v = elVoices[document.getElementById('elVoiceSel').selectedIndex];
-    if (v) localStorage.setItem('el_voice', v.voice_id);
+    if (v) persistSave('el_voice', v.voice_id);
   });
 });
 
+// ── Persistent storage helpers ───────────────────────────
+// Uses localStorage + cookie backup so Safari doesn't lose the key
+function persistSave(key, val) {
+  try { localStorage.setItem(key, val); } catch(e) {}
+  try {
+    // Cookie expires in 1 year
+    const expires = new Date(Date.now() + 365*24*60*60*1000).toUTCString();
+    document.cookie = `${key}=${encodeURIComponent(val)};expires=${expires};path=/;SameSite=Lax`;
+  } catch(e) {}
+}
+function persistLoad(key) {
+  // Try localStorage first
+  try {
+    const v = localStorage.getItem(key);
+    if (v) return v;
+  } catch(e) {}
+  // Fall back to cookie
+  try {
+    const match = document.cookie.match(new RegExp('(?:^|; )' + key + '=([^;]*)'));
+    if (match) return decodeURIComponent(match[1]);
+  } catch(e) {}
+  return null;
+}
+function persistDelete(key) {
+  try { localStorage.removeItem(key); } catch(e) {}
+  try { document.cookie = `${key}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`; } catch(e) {}
+}
+
 window.addEventListener('load', () => {
-  // Restore API key
-  const saved = localStorage.getItem('el_key');
-  if (saved) {
-    elKey.value = saved;
-    // Auto-load voices silently if key exists
+  // Restore API key from localStorage or cookie backup
+  const savedKey  = persistLoad('el_key');
+  const savedVoice= persistLoad('el_voice');
+  const savedMode = persistLoad('voice_mode');
+
+  if (savedKey) {
+    elKey.value = savedKey;
+    // Auto-load voices silently
     fetchELVoices(true);
   }
-  // Restore voice mode
-  const savedMode = localStorage.getItem('voice_mode');
   if (savedMode) setVoiceMode(savedMode);
 });
 
@@ -1059,21 +1088,28 @@ async function zoom(delta) {
 
 // ── Script parsing ────────────────────────────────────────
 // Screenplay abbreviation expansion for TTS
+// Only expand unambiguous screenplay abbreviations that have dots
+// (avoids mis-expanding real words like PR, FX, etc.)
 const expansions = [
-  [/\bINT\.\s*/gi, 'Interior. '],
-  [/\bEXT\.\s*/gi, 'Exterior. '],
   [/\bINT\.\/EXT\.\s*/gi, 'Interior Exterior. '],
-  [/\bV\.O\.\s*/gi, 'Voice over. '],
-  [/\bO\.S\.\s*/gi, 'Off screen. '],
-  [/\bO\.C\.\s*/gi, 'Off camera. '],
-  [/\bCONT['']D\s*/gi, 'Continued. '],
-  [/\bb\.g\.\s*/gi, 'background '],
-  [/\bSFX\b/gi, 'Sound effect'],
-  [/\bFX\b/gi, 'Effects'],
+  [/\bINT\.\s*/gi,         'Interior. '],
+  [/\bEXT\.\s*/gi,         'Exterior. '],
+  [/\bV\.O\.\s*/gi,       'Voice over. '],
+  [/\bO\.S\.\s*/gi,       'Off screen. '],
+  [/\bO\.C\.\s*/gi,       'Off camera. '],
+  [/\bCONT\.?['']D\b/gi,   'Continued'],
+  [/\bb\.g\.\s*/gi,       'background '],
+  [/\bW\.E\.\s*/gi,       'Wide establishing. '],
+  [/\bP\.O\.V\.\s*/gi,   'Point of view. '],
+  [/\bM\.O\.S\.\s*/gi,   'without sound. '],
+  // Only expand when followed by space or end of string — avoids partial matches
+  [/\bI\.E\.\s+/gi,       'that is, '],
 ];
 
 function expandForSpeech(text) {
   let t = text;
+  // Only apply expansions to lines that look like scene headings or action
+  // Skip dialogue lines to avoid mangling character speech
   expansions.forEach(([re, val]) => t = t.replace(re, val));
   return t;
 }

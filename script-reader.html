@@ -181,6 +181,19 @@ body{font-family:'Inter',sans-serif;color:var(--text);display:flex;flex-directio
 /* Canvas never stretches — JS sets exact CSS pixel size */
 .page-wrap canvas{display:block;}
 
+/* Invisible tap overlay on top of PDF canvas */
+.pdf-tap-layer{
+  position:absolute;inset:0;
+  z-index:15;cursor:pointer;
+}
+.pdf-tap-zone{
+  position:absolute;
+  left:0;right:0;
+  cursor:pointer;
+  /* Visible tap feedback on mobile */
+  -webkit-tap-highlight-color:rgba(245,166,35,0.2);
+}
+
 /* THE HIGHLIGHT BAR */
 #highlightBar{
   position:absolute;
@@ -813,8 +826,10 @@ async function handleFile(file, existingId) {
     await renderAllPages();
     const text = await extractTextWithPositions();
     buildLines(text);
+    // Small delay to ensure offsetTops are settled, then build tap zones
+    setTimeout(() => buildTapZones(), 300);
     renderLibrary();
-    showToast('Tap play to start · ⌃ for controls');
+    showToast('Tap any line to read from there · ⌃ for controls');
   } else {
     pdfDoc = null;
     const fr = new FileReader();
@@ -855,11 +870,11 @@ async function openFromLibrary(entry) {
     const text = await extractTextWithPositions();
     buildLines(text);
     currentScriptId = entry.id;
-    // Offer resume if bookmark exists
+    setTimeout(() => buildTapZones(), 300);
     if (entry.bookmark > 0) {
       showResumeModal(entry);
     } else {
-      showToast('Tap play to start');
+      showToast('Tap any line to read from there');
     }
   } else {
     pdfDoc = null;
@@ -1012,8 +1027,68 @@ async function renderAllPages() {
     wrap.dataset.displayH = displayH;
 
     wrap.appendChild(canvas);
+
+    // Invisible tap layer — populated after extractTextWithPositions
+    const tapLayer = document.createElement('div');
+    tapLayer.className = 'pdf-tap-layer';
+    tapLayer.dataset.page = p;
+    wrap.appendChild(tapLayer);
+
     canvasWrap.insertBefore(wrap, highlightBar);
   }
+}
+
+// Build tap zones on top of each PDF page so users can tap a line to read from there
+function buildTapZones() {
+  if (!pdfTextMap.length || !lines.length) return;
+
+  // Clear existing tap zones
+  document.querySelectorAll('.pdf-tap-zone').forEach(z => z.remove());
+
+  const pageEls = Array.from(canvasWrap.querySelectorAll('.page-wrap'));
+
+  // For each line in lines[], find its pdfTextMap entry and create a tap zone
+  lines.forEach((line, lineIdx) => {
+    if (!line.display) return;
+    const entry = findPdfEntry(line.display);
+    if (!entry) return;
+
+    const pageEl = pageEls[entry.pageIdx];
+    if (!pageEl) return;
+    const tapLayer = pageEl.querySelector('.pdf-tap-layer');
+    if (!tapLayer) return;
+
+    const pageTop = pageEl.offsetTop;
+    const relY = entry.absY - pageTop;
+
+    const zone = document.createElement('div');
+    zone.className = 'pdf-tap-zone';
+    zone.style.top    = Math.max(0, relY - 2) + 'px';
+    zone.style.height = Math.max(entry.absH + 4, 24) + 'px';
+    zone.dataset.lineIdx = lineIdx;
+
+    zone.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(zone.dataset.lineIdx);
+      if (!isNaN(idx)) {
+        stopSpeech();
+        isPlaying = true;
+        speakFrom(idx);
+      }
+    });
+    zone.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const idx = parseInt(zone.dataset.lineIdx);
+      if (!isNaN(idx)) {
+        stopSpeech();
+        isPlaying = true;
+        speakFrom(idx);
+      }
+    });
+
+    tapLayer.appendChild(zone);
+  });
 }
 
 async function extractTextWithPositions() {
@@ -1082,7 +1157,7 @@ async function zoom(delta) {
   showToast('Rendering…');
   await renderAllPages();
   await extractTextWithPositions();
-  // re-highlight
+  setTimeout(() => buildTapZones(), 300);
   if (currentIdx >= 0) positionHighlight(currentIdx);
 }
 
@@ -1189,8 +1264,9 @@ function buildLinesFromText(text) {
 }
 
 // ── Reader open ───────────────────────────────────────────
+// PDF viewport click — only toggles play if tap wasn't on a tap zone
 pdfViewport.addEventListener('click', (e) => {
-  // tap on PDF to start if not started
+  if (e.target.classList.contains('pdf-tap-zone')) return;
   if (!isPlaying && lines.length && currentIdx < 0) {
     togglePlay();
   }

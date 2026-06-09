@@ -2,9 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
-<meta http-equiv="Pragma" content="no-cache"/>
-<meta http-equiv="Expires" content="0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
@@ -15,411 +12,205 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 :root{
-  --bg:#0a0a0a;
-  --panel:#141414;
-  --panel2:#1c1c1e;
+  --bg:#0a0a0a;--panel:#141414;--panel2:#1c1c1e;
   --border:rgba(255,255,255,0.08);
-  --accent:#f5a623;
-  --accent2:#4fb8d4;
-  --text:#f0f0f0;
-  --dim:#606060;
-  --highlight:rgba(245,166,35,0.32);
-  --highlight-border:rgba(245,166,35,0.9);
+  --accent:#f5a623;--accent2:#4fb8d4;
+  --text:#f0f0f0;--dim:#606060;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow:hidden;background:var(--bg);}
 body{font-family:'Inter',sans-serif;color:var(--text);display:flex;flex-direction:column;}
 
-/* ── LANDING SCREEN ── */
+/* LANDING */
 #landing{
-  position:fixed;inset:0;z-index:1000;
-  background:var(--bg);
+  position:fixed;inset:0;z-index:100;background:var(--bg);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:0;
-  padding:40px 24px;
-  padding-top:max(40px, env(safe-area-inset-top));
+  padding:40px 24px;gap:0;
 }
-.brand{
-  font-family:'Orbitron',sans-serif;font-weight:900;
-  font-size:13px;letter-spacing:.3em;color:var(--accent);
-  text-transform:uppercase;margin-bottom:48px;
-}
+.brand{font-family:'Orbitron',sans-serif;font-weight:900;font-size:12px;letter-spacing:.3em;color:var(--accent);text-transform:uppercase;margin-bottom:40px;}
 .brand span{color:var(--dim);font-weight:400;}
-.hero-icon{font-size:72px;margin-bottom:32px;filter:drop-shadow(0 0 24px rgba(245,166,35,.3));}
-.hero-title{font-family:'Orbitron',sans-serif;font-weight:700;font-size:22px;letter-spacing:.08em;text-align:center;margin-bottom:12px;color:#fff;}
-.hero-sub{font-size:14px;color:var(--dim);text-align:center;line-height:1.7;max-width:300px;margin-bottom:52px;}
-
-.load-btn{
-  width:100%;max-width:320px;
-  padding:18px 0;
-  background:var(--accent);
-  border:none;border-radius:16px;
-  font-family:'Orbitron',sans-serif;font-weight:700;
-  font-size:12px;letter-spacing:.2em;text-transform:uppercase;
-  color:#0a0a0a;cursor:pointer;
-  position:relative;
-  transition:all .2s;
-  box-shadow:0 0 32px rgba(245,166,35,.25);
+.hero-icon{font-size:64px;margin-bottom:24px;}
+.hero-title{font-family:'Orbitron',sans-serif;font-weight:700;font-size:22px;letter-spacing:.06em;text-align:center;margin-bottom:10px;}
+.hero-sub{font-size:14px;color:var(--dim);text-align:center;line-height:1.7;max-width:300px;margin-bottom:44px;}
+.open-btn{
+  width:100%;max-width:320px;padding:17px 0;
+  background:var(--accent);border:none;border-radius:16px;
+  font-family:'Orbitron',sans-serif;font-weight:700;font-size:11px;letter-spacing:.2em;
+  color:#0a0a0a;cursor:pointer;position:relative;
+  box-shadow:0 0 28px rgba(245,166,35,.3);margin-bottom:12px;
 }
-.load-btn:hover{background:#ffb733;transform:translateY(-1px);}
-.load-btn:active{transform:translateY(0);}
-.load-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.open-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.lib-btn{
+  width:100%;max-width:320px;padding:14px 0;
+  background:transparent;border:1px solid var(--border);border-radius:16px;
+  font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:.15em;
+  color:var(--dim);cursor:pointer;margin-bottom:16px;
+}
+.hint{font-size:11px;color:var(--dim);text-align:center;}
 
-.recent-hint{margin-top:20px;font-size:11px;color:var(--dim);text-align:center;letter-spacing:.05em;}
-
-/* ── LIBRARY ── */
-#libraryScreen{
-  position:fixed;inset:0;z-index:1100;
-  background:var(--bg);
+/* LIBRARY */
+#library{
+  position:fixed;inset:0;z-index:200;background:var(--bg);
   display:none;flex-direction:column;
-  padding-top:max(0px,env(safe-area-inset-top));
+  padding-top:max(16px,env(safe-area-inset-top));
 }
-#libraryScreen.open{display:flex;}
-.lib-header{
-  padding:18px 20px 14px;
-  border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
-  flex-shrink:0;
-}
-.lib-title{font-family:'Orbitron',sans-serif;font-weight:700;font-size:13px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;}
-.lib-close{background:rgba(255,255,255,.08);border:none;border-radius:50%;width:34px;height:34px;color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+#library.show{display:flex;}
+.lib-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);}
+.lib-hdr-title{font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:.18em;color:var(--accent);text-transform:uppercase;}
+.lib-hdr-close{background:rgba(255,255,255,.08);border:none;border-radius:50%;width:34px;height:34px;color:var(--text);font-size:16px;cursor:pointer;}
 .lib-scroll{flex:1;overflow-y:auto;padding:16px;}
-.lib-scroll::-webkit-scrollbar{display:none;}
-.lib-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--dim);}
-.lib-empty-icon{font-size:40px;opacity:.2;}
-.lib-empty-txt{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;}
-.lib-card{
-  background:var(--panel);border:1px solid var(--border);border-radius:14px;
-  padding:16px 18px;margin-bottom:12px;cursor:pointer;
-  display:flex;align-items:center;gap:14px;
-  transition:all .2s;position:relative;
-}
-.lib-card:active{transform:scale(.98);}
-.lib-card-icon{font-size:28px;flex-shrink:0;}
+.lib-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;gap:10px;color:var(--dim);font-size:12px;}
+.lib-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;}
+.lib-card-icon{font-size:26px;flex-shrink:0;}
 .lib-card-info{flex:1;overflow:hidden;}
-.lib-card-name{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;}
-.lib-card-meta{font-size:11px;color:var(--dim);}
-.lib-card-progress{
-  height:3px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:8px;overflow:hidden;
+.lib-card-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
+.lib-card-meta{font-size:11px;color:var(--dim);margin-bottom:6px;}
+.lib-prog-track{height:3px;background:rgba(255,255,255,.08);border-radius:2px;}
+.lib-prog-fill{height:100%;background:var(--accent);border-radius:2px;}
+.lib-card-del{background:transparent;border:none;color:var(--dim);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0;}
+.lib-add{
+  width:100%;padding:14px;background:transparent;border:1.5px dashed var(--border);
+  border-radius:14px;color:var(--accent);font-family:'Orbitron',sans-serif;
+  font-size:9px;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;
+  position:relative;display:flex;align-items:center;justify-content:center;gap:8px;
+  margin-top:4px;
 }
-.lib-card-prog-fill{height:100%;background:var(--accent);border-radius:2px;}
-.lib-card-del{
-  background:transparent;border:none;color:var(--dim);font-size:18px;
-  padding:6px;cursor:pointer;flex-shrink:0;
-  transition:color .2s;
-}
-.lib-card-del:active{color:#e85050;}
-.lib-add-btn{
-  width:100%;padding:15px 0;
-  background:transparent;border:1.5px dashed var(--border);border-radius:14px;
-  color:var(--accent);font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:.15em;
-  text-transform:uppercase;cursor:pointer;transition:all .2s;
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  position:relative;margin-top:4px;
-}
-.lib-add-btn:hover{border-color:var(--accent);background:rgba(245,166,35,.05);}
-.lib-add-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.lib-add input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
 
-/* Resume modal */
+/* RESUME MODAL */
 #resumeModal{
-  position:fixed;inset:0;z-index:2000;
-  background:rgba(0,0,0,.7);backdrop-filter:blur(8px);
+  position:fixed;inset:0;z-index:300;
+  background:rgba(0,0,0,.75);backdrop-filter:blur(8px);
   display:none;align-items:center;justify-content:center;padding:24px;
 }
-#resumeModal.open{display:flex;}
-.resume-box{
-  background:var(--panel);border:1px solid var(--border);border-radius:20px;
-  padding:28px 24px;width:100%;max-width:340px;text-align:center;
-}
-.resume-icon{font-size:36px;margin-bottom:14px;}
-.resume-title{font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:.15em;color:var(--text);text-transform:uppercase;margin-bottom:8px;}
-.resume-sub{font-size:13px;color:var(--dim);line-height:1.6;margin-bottom:24px;}
+#resumeModal.show{display:flex;}
+.resume-box{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:28px 24px;width:100%;max-width:340px;text-align:center;}
+.resume-icon{font-size:34px;margin-bottom:12px;}
+.resume-title{font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:.15em;color:var(--text);text-transform:uppercase;margin-bottom:8px;}
+.resume-sub{font-size:13px;color:var(--dim);line-height:1.6;margin-bottom:22px;}
 .resume-btns{display:flex;gap:10px;}
-.resume-btn{flex:1;padding:13px 0;border:none;border-radius:12px;font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+.resume-btn{flex:1;padding:13px 0;border:none;border-radius:12px;font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;}
 .resume-btn.primary{background:var(--accent);color:#0a0a0a;font-weight:700;}
 .resume-btn.secondary{background:var(--panel2);color:var(--dim);border:1px solid var(--border);}
 
-/* Landing library button */
-.lib-btn{
-  width:100%;max-width:320px;
-  padding:14px 0;margin-top:12px;
-  background:transparent;border:1px solid var(--border);border-radius:16px;
-  font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--dim);cursor:pointer;transition:all .2s;
-}
-.lib-btn:hover{border-color:var(--accent2);color:var(--accent2);}
-
-/* ── READER SCREEN ── */
-#reader{
-  position:fixed;inset:0;z-index:500;
-  display:none;flex-direction:column;
-  background:#111;
-}
-#reader.open{display:flex;}
+/* READER */
+#reader{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;background:#111;}
+#reader.show{display:flex;}
 
 /* PDF viewport */
-#pdfViewport{
-  flex:1;overflow-y:auto;overflow-x:hidden;
-  background:#1a1a1a;
-  position:relative;
-  scroll-behavior:smooth;
+#pdfView{flex:1;overflow-y:auto;overflow-x:hidden;background:#1a1a1a;position:relative;}
+#pdfView::-webkit-scrollbar{display:none;}
+#pageWrap{display:block;width:100%;position:relative;}
+.pdf-page{position:relative;display:block;margin:0 auto 3px;background:#fff;overflow:hidden;}
+.pdf-page canvas{display:block;}
+#hlBar{
+  position:absolute;left:0;right:0;
+  background:rgba(245,166,35,.25);
+  border-top:2px solid rgba(245,166,35,.85);
+  border-bottom:2px solid rgba(245,166,35,.85);
+  pointer-events:none;z-index:10;display:none;
+  transition:top .3s ease,height .25s ease;
+  box-shadow:0 0 16px rgba(245,166,35,.15);
 }
-#pdfViewport::-webkit-scrollbar{display:none;}
+.tap-zone{position:absolute;left:0;right:0;z-index:20;cursor:pointer;}
 
-#pdfCanvas-wrap{
-  display:block;
-  position:relative;
-  width:100%;
-}
-
-/* Per-page wrapper — exact pixel size set by JS, no auto sizing */
-.page-wrap{
-  position:relative;
-  display:block;
-  margin:0 auto 3px;
-  overflow:hidden;
-  background:#fff;
-  flex-shrink:0;
-}
-/* Canvas never stretches — JS sets exact CSS pixel size */
-.page-wrap canvas{display:block;}
-
-/* Invisible tap overlay on top of PDF canvas */
-.pdf-tap-layer{
-  position:absolute;inset:0;
-  z-index:15;cursor:pointer;
-}
-.pdf-tap-zone{
-  position:absolute;
-  left:0;right:0;
-  cursor:pointer;
-  /* Visible tap feedback on mobile */
-  -webkit-tap-highlight-color:rgba(245,166,35,0.2);
-}
-
-/* THE HIGHLIGHT BAR */
-#highlightBar{
-  position:absolute;
-  left:0;right:0;
-  background:var(--highlight);
-  border-top:2px solid var(--highlight-border);
-  border-bottom:2px solid var(--highlight-border);
-  pointer-events:none;
-  transition:top .3s cubic-bezier(.4,0,.2,1), height .3s cubic-bezier(.4,0,.2,1), opacity .2s;
-  z-index:10;
-  box-shadow:0 0 20px rgba(245,166,35,.15);
-  display:none;
-}
-
-/* Top bar overlay */
+/* Top bar */
 #topBar{
-  position:absolute;top:0;left:0;right:0;
-  padding:max(14px, env(safe-area-inset-top)) 18px 14px;
+  position:absolute;top:0;left:0;right:0;z-index:30;
+  padding:max(14px,env(safe-area-inset-top)) 16px 14px;
   display:flex;align-items:center;justify-content:space-between;
-  background:linear-gradient(to bottom,rgba(10,10,10,.95),transparent);
-  z-index:20;pointer-events:none;
+  background:linear-gradient(to bottom,rgba(0,0,0,.9),transparent);
+  pointer-events:none;
 }
 #topBar button{pointer-events:all;}
-.top-title{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:.15em;color:rgba(255,255,255,.7);text-transform:uppercase;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.top-close{background:rgba(255,255,255,.1);border:none;border-radius:50%;width:34px;height:34px;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);}
+.top-title{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:.14em;color:rgba(255,255,255,.7);text-transform:uppercase;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 10px;}
+.top-close{background:rgba(255,255,255,.12);border:none;border-radius:50%;width:34px;height:34px;color:#fff;font-size:15px;cursor:pointer;flex-shrink:0;}
+.top-dot{width:8px;height:8px;border-radius:50%;background:var(--dim);transition:all .3s;flex-shrink:0;}
+.top-dot.active{background:#3ddc84;box-shadow:0 0 8px #3ddc84;animation:pulse 1.4s infinite;}
+.top-dot.loading{background:var(--accent);animation:pulse .6s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+#pageNum{position:absolute;top:max(14px,env(safe-area-inset-top));right:16px;background:rgba(0,0,0,.6);color:rgba(255,255,255,.6);font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:.1em;padding:5px 10px;border-radius:10px;z-index:31;pointer-events:none;}
 
-/* ── BOTTOM PLAYER ── */
-#player{
-  background:var(--panel);
-  border-top:1px solid var(--border);
-  flex-shrink:0;
-  padding-bottom:max(16px, env(safe-area-inset-bottom));
-}
+/* PLAYER */
+#player{background:var(--panel);border-top:1px solid var(--border);flex-shrink:0;padding-bottom:max(12px,env(safe-area-inset-bottom));}
 
-/* Mini bar (always visible) */
-#miniBar{
-  display:flex;align-items:center;gap:8px;
-  padding:10px 14px 8px;
-}
-.mini-title{flex:1;font-size:11px;color:rgba(255,255,255,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.mini-play{
-  width:48px;height:48px;border-radius:50%;
-  background:var(--accent);border:none;
-  color:#0a0a0a;font-size:20px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;transition:all .15s;
-  box-shadow:0 0 16px rgba(245,166,35,.3);
-}
-.mini-play:active{transform:scale(.94);}
-/* Restart button */
-.mini-restart{
-  width:36px;height:36px;border-radius:50%;
-  background:rgba(255,255,255,.07);border:none;
-  color:var(--accent2);font-size:16px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  transition:all .15s;
-}
-.mini-restart:active{transform:scale(.9);}
-/* Skip buttons with label */
-.mini-skip-wrap{
-  display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;
-}
-.mini-skip{
-  width:38px;height:38px;border-radius:50%;
-  background:rgba(255,255,255,.07);border:none;
-  color:var(--text);font-size:15px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  transition:all .15s;
-}
-.mini-skip:active{transform:scale(.9);}
-.mini-skip-lbl{
-  font-family:'Orbitron',sans-serif;font-size:7px;
-  color:var(--dim);letter-spacing:.08em;
-}
-.mini-expand{background:none;border:none;color:var(--dim);font-size:13px;cursor:pointer;padding:4px;flex-shrink:0;}
-
-/* Progress bar */
-#progressWrap{
-  padding:6px 18px 2px;
-  cursor:pointer;
-  touch-action:none;
-  user-select:none;-webkit-user-select:none;
-}
-#progressTrack{
-  height:4px;
-  background:rgba(255,255,255,.12);
-  border-radius:4px;
-  position:relative;
-  overflow:visible;
-}
-#progressFill{
-  height:100%;
-  background:var(--accent);
-  border-radius:4px;
-  width:0%;
-  pointer-events:none;
-}
-#progressThumb{
-  position:absolute;
-  right:0;top:50%;
-  transform:translate(50%,-50%);
-  width:16px;height:16px;
-  background:var(--accent);
-  border-radius:50%;
-  box-shadow:0 0 8px rgba(245,166,35,.5);
-  pointer-events:none;
-  opacity:0;
-  transition:opacity .15s, transform .15s;
-}
-#progressWrap:hover #progressThumb,
-#progressWrap.dragging #progressThumb{
-  opacity:1;
-  transform:translate(50%,-50%) scale(1.2);
-}
-/* Time labels */
-#progressLabels{
-  display:flex;justify-content:space-between;
-  padding:3px 0 0;
-  font-family:'Orbitron',sans-serif;
-  font-size:8px;letter-spacing:.08em;color:var(--dim);
-}
-/* Scrub preview tooltip */
-#scrubTooltip{
-  position:absolute;
-  bottom:18px;
-  transform:translateX(-50%);
-  background:rgba(20,20,20,.95);
-  border:1px solid var(--border);
-  color:var(--text);
-  font-family:'Orbitron',sans-serif;
-  font-size:8px;letter-spacing:.08em;
-  padding:5px 9px;border-radius:8px;
-  pointer-events:none;
-  white-space:nowrap;
-  opacity:0;transition:opacity .15s;
-  z-index:100;
-}
+/* Scrubber */
+#scrubWrap{padding:8px 18px 4px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;}
+#scrubTrack{height:4px;background:rgba(255,255,255,.12);border-radius:4px;position:relative;}
+#scrubFill{height:100%;background:var(--accent);border-radius:4px;width:0%;pointer-events:none;}
+#scrubThumb{position:absolute;top:50%;left:0;transform:translate(-50%,-50%);width:14px;height:14px;background:var(--accent);border-radius:50%;opacity:0;transition:opacity .15s;pointer-events:none;}
+#scrubWrap:active #scrubThumb{opacity:1;}
+#scrubLabels{display:flex;justify-content:space-between;padding:3px 0 0;font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:.06em;color:var(--dim);}
+#scrubTooltip{position:absolute;bottom:16px;transform:translateX(-50%);background:rgba(20,20,20,.95);border:1px solid var(--border);color:var(--text);font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:.06em;padding:5px 9px;border-radius:8px;pointer-events:none;white-space:nowrap;opacity:0;transition:opacity .15s;z-index:50;}
 #scrubTooltip.show{opacity:1;}
 
-/* Full controls panel (slide up) */
-#fullControls{
-  max-height:0;overflow:hidden;
-  transition:max-height .35s cubic-bezier(.4,0,.2,1);
-  background:var(--panel);
-}
-#fullControls.open{max-height:600px;}
+/* Controls row */
+#controls{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px 16px 6px;}
+.ctrl{background:rgba(255,255,255,.07);border:none;border-radius:50%;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.ctrl:active{transform:scale(.9);}
+.ctrl.sm{width:38px;height:38px;font-size:16px;}
+.ctrl.md{width:42px;height:42px;font-size:18px;}
+.ctrl.lg{width:52px;height:52px;font-size:22px;background:var(--accent);color:#0a0a0a;box-shadow:0 0 18px rgba(245,166,35,.35);}
+.ctrl.accent{color:var(--accent2);}
+.ctrl-lbl-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.ctrl-lbl{font-family:'Orbitron',sans-serif;font-size:7px;color:var(--dim);letter-spacing:.08em;}
 
-.fc-inner{padding:18px 20px 8px;}
-.fc-row{margin-bottom:14px;}
-.fc-label{font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase;margin-bottom:6px;display:block;}
-
-/* Voice mode toggle */
-.mode-row{display:flex;gap:8px;margin-bottom:14px;}
-.mode-btn{flex:1;padding:8px 0;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--dim);font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:.1em;cursor:pointer;transition:all .2s;text-transform:uppercase;}
-.mode-btn.active{background:rgba(245,166,35,.12);border-color:var(--accent);color:var(--accent);}
-
-select{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;padding:10px 14px;outline:none;cursor:pointer;appearance:none;margin-bottom:0;}
-
+/* Expand panel */
+#expandBtn{background:none;border:none;color:var(--dim);font-size:14px;cursor:pointer;padding:4px 8px;}
+#panel{max-height:0;overflow:hidden;transition:max-height .35s ease;}
+#panel.open{max-height:500px;}
+.panel-inner{padding:14px 18px 8px;border-top:1px solid var(--border);}
+.p-lbl{font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-bottom:5px;display:block;}
+.mode-row{display:flex;gap:8px;margin-bottom:12px;}
+.mode-btn{flex:1;padding:8px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--dim);font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:.1em;cursor:pointer;text-transform:uppercase;}
+.mode-btn.on{background:rgba(245,166,35,.12);border-color:var(--accent);color:var(--accent);}
+select,input.text-in{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;padding:9px 12px;outline:none;margin-bottom:10px;appearance:none;cursor:pointer;}
 .api-row{display:flex;gap:8px;margin-bottom:10px;}
-.api-input{flex:1;background:var(--panel2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;padding:10px 14px;outline:none;transition:border-color .2s;}
-.api-input:focus{border-color:var(--accent2);}
-.api-input::placeholder{color:var(--dim);}
+.api-row input{flex:1;margin-bottom:0;}
 .api-go{padding:0 14px;background:var(--accent);border:none;border-radius:10px;color:#0a0a0a;font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:.1em;cursor:pointer;white-space:nowrap;}
-
-/* Sliders */
-.slider-row{display:flex;align-items:center;gap:12px;}
-input[type=range]{flex:1;accent-color:var(--accent);height:4px;cursor:pointer;}
-.sval{font-size:11px;color:var(--accent);min-width:38px;text-align:right;font-family:'Orbitron',sans-serif;}
-
-/* Extra controls row */
-.ctrl-row{display:flex;gap:10px;padding:10px 20px 14px;}
-.ctrl-btn{flex:1;padding:11px 0;background:var(--panel2);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
-.ctrl-btn:active{transform:scale(.94);}
-.ctrl-btn.restart{color:var(--accent2);}
-.ctrl-btn.back{color:var(--dim);}
-.ctrl-btn.zoom-in,.ctrl-btn.zoom-out{font-size:14px;font-family:'Orbitron',sans-serif;color:var(--dim);}
+.sl-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+input[type=range]{flex:1;accent-color:var(--accent);}
+.sl-val{font-size:10px;color:var(--accent);min-width:36px;text-align:right;font-family:'Orbitron',sans-serif;}
 
 /* Toast */
-.toast{position:fixed;bottom:120px;left:50%;transform:translateX(-50%);background:rgba(30,30,30,.95);color:#fff;font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:.12em;padding:10px 20px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:3000;text-transform:uppercase;white-space:nowrap;border:1px solid var(--border);backdrop-filter:blur(10px);}
-.toast.show{opacity:1;}
+#toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(25,25,25,.95);color:#fff;font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:.1em;padding:9px 18px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;text-transform:uppercase;white-space:nowrap;border:1px solid var(--border);}
+#toast.show{opacity:1;}
 
-/* Dot */
-.dot{width:7px;height:7px;border-radius:50%;background:var(--dim);display:inline-block;transition:all .3s;}
-.dot.active{background:#3ddc84;box-shadow:0 0 8px #3ddc84;animation:pulse 1.4s infinite;}
-.dot.loading{background:var(--accent);animation:pulse .6s infinite;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
-
-/* Page indicator */
-#pageIndicator{position:absolute;top:max(18px,env(safe-area-inset-top));right:18px;background:rgba(0,0,0,.6);color:rgba(255,255,255,.6);font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:.1em;padding:5px 10px;border-radius:10px;pointer-events:none;z-index:25;backdrop-filter:blur(6px);}
+@media(max-width:400px){
+  #controls{gap:6px;}
+  .ctrl.sm{width:34px;height:34px;font-size:14px;}
+  .ctrl.lg{width:46px;height:46px;font-size:19px;}
+}
 </style>
 </head>
 <body>
 
-<!-- ── LANDING ── -->
+<!-- LANDING -->
 <div id="landing">
   <div class="brand">HammerHead <span>Studios</span></div>
   <div class="hero-icon">🎬</div>
   <div class="hero-title">Script Reader</div>
-  <div class="hero-sub">Upload your screenplay and follow along line by line — just like Speechify.</div>
-  <button class="load-btn">
-    <input type="file" id="landingFile" accept=".pdf,.txt,.fountain,.fdx,.md"/>
+  <div class="hero-sub">Follow along line by line with your screenplay.</div>
+  <button class="open-btn">
+    <input type="file" id="openFile" accept=".pdf,.txt,.fountain,.fdx,.md"/>
     📄 &nbsp; Open Script
   </button>
   <button class="lib-btn" id="openLibBtn">📚 &nbsp; My Library</button>
-  <div class="recent-hint">Supports PDF, .fountain, .txt and more</div>
+  <div class="hint">PDF · .fountain · .txt and more</div>
 </div>
 
-<!-- LIBRARY SCREEN -->
-<div id="libraryScreen">
-  <div class="lib-header">
-    <span class="lib-title">📚 My Library</span>
-    <button class="lib-close" id="libCloseBtn">✕</button>
+<!-- LIBRARY -->
+<div id="library">
+  <div class="lib-hdr">
+    <span class="lib-hdr-title">📚 My Library</span>
+    <button class="lib-hdr-close" id="closeLibBtn">✕</button>
   </div>
-  <div class="lib-scroll" id="libScroll">
-    <div class="lib-empty" id="libEmpty">
-      <div class="lib-empty-icon">📭</div>
-      <div class="lib-empty-txt">No scripts yet</div>
-      <div style="font-size:12px;color:var(--dim);margin-top:6px;">Add a script below</div>
-    </div>
+  <div class="lib-scroll">
+    <div class="lib-empty" id="libEmpty">No scripts yet — add one below</div>
     <div id="libCards"></div>
-    <div class="lib-add-btn">
+    <div class="lib-add">
       <input type="file" id="libFile" accept=".pdf,.txt,.fountain,.fdx,.md"/>
-      <span>＋ Add Script</span>
+      ＋ Add Script
     </div>
   </div>
 </div>
@@ -429,1339 +220,722 @@ input[type=range]{flex:1;accent-color:var(--accent);height:4px;cursor:pointer;}
   <div class="resume-box">
     <div class="resume-icon">🔖</div>
     <div class="resume-title">Resume?</div>
-    <div class="resume-sub" id="resumeSub">Continue from where you left off?</div>
+    <div class="resume-sub" id="resumeSub"></div>
     <div class="resume-btns">
-      <button class="resume-btn secondary" id="resumeFromStart">Start Over</button>
-      <button class="resume-btn primary" id="resumeFromBookmark">Resume</button>
+      <button class="resume-btn secondary" id="resumeStart">Start Over</button>
+      <button class="resume-btn primary" id="resumeResume">Resume</button>
     </div>
   </div>
 </div>
 
-<!-- ── READER ── -->
+<!-- READER -->
 <div id="reader">
-
-  <!-- PDF full screen -->
-  <div id="pdfViewport">
+  <div id="pdfView">
     <div id="topBar">
-      <button class="top-close" id="closeBtn">✕</button>
+      <button class="top-close" id="closeReader">✕</button>
       <span class="top-title" id="topTitle">Script</span>
-      <div class="dot" id="dot"></div>
+      <div class="top-dot" id="dot"></div>
     </div>
-    <div id="pageIndicator" id="pageInd">— / —</div>
-    <div id="pdfCanvas-wrap">
-      <!-- pages injected here -->
-      <div id="highlightBar"></div>
+    <div id="pageNum">— / —</div>
+    <div id="pageWrap">
+      <div id="hlBar"></div>
     </div>
   </div>
 
-  <!-- Bottom player -->
   <div id="player">
-
-    <!-- Progress -->
-    <div id="progressWrap">
-      <div id="progressTrack">
-        <div id="progressFill"></div>
-        <div id="progressThumb"></div>
+    <div id="scrubWrap">
+      <div id="scrubTrack">
+        <div id="scrubFill"></div>
+        <div id="scrubThumb"></div>
         <div id="scrubTooltip"></div>
       </div>
-      <div id="progressLabels">
-        <span id="progCurrent">0:00</span>
-        <span id="progLineCount">— / —</span>
-        <span id="progTotal">0:00</span>
+      <div id="scrubLabels">
+        <span id="lblLeft">0:00</span>
+        <span id="lblMid">— / —</span>
+        <span id="lblRight">-0:00</span>
       </div>
     </div>
 
-    <!-- Mini bar -->
-    <div id="miniBar">
-      <!-- Restart from beginning -->
-      <button class="mini-restart" id="restartTopBtn" title="Start from beginning">⟳</button>
+    <div id="controls">
+      <!-- Restart -->
+      <button class="ctrl sm accent" id="restartBtn" title="Restart">⟳</button>
 
-      <!-- 10s back -->
-      <div class="mini-skip-wrap">
-        <button class="mini-skip" id="back10Btn" title="10 lines back">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
-          </svg>
+      <!-- Back 10 -->
+      <div class="ctrl-lbl-wrap">
+        <button class="ctrl sm" id="back10Btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
         </button>
-        <span class="mini-skip-lbl">10</span>
+        <span class="ctrl-lbl">10</span>
       </div>
 
-      <!-- Play / Pause -->
-      <button class="mini-play" id="playBtn">▶</button>
+      <!-- Play/Pause -->
+      <button class="ctrl lg" id="playBtn">▶</button>
 
-      <!-- 10s forward -->
-      <div class="mini-skip-wrap">
-        <button class="mini-skip" id="fwd10Btn" title="10 lines forward">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-4.5"/>
-          </svg>
+      <!-- Fwd 10 -->
+      <div class="ctrl-lbl-wrap">
+        <button class="ctrl sm" id="fwd10Btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-4.5"/></svg>
         </button>
-        <span class="mini-skip-lbl">10</span>
+        <span class="ctrl-lbl">10</span>
       </div>
 
-      <button class="mini-expand" id="expandBtn">⌃</button>
+      <!-- Expand -->
+      <button id="expandBtn">⌃</button>
     </div>
 
-    <!-- Full controls (slide up) -->
-    <div id="fullControls">
-      <div class="fc-inner">
-
-        <!-- Voice mode -->
-        <span class="fc-label">Voice Engine</span>
+    <div id="panel">
+      <div class="panel-inner">
+        <span class="p-lbl">Voice Engine</span>
         <div class="mode-row">
-          <button class="mode-btn active" id="modeBrowser" onclick="setVoiceMode('browser')">Browser</button>
-          <button class="mode-btn" id="modeEL" onclick="setVoiceMode('elevenlabs')">ElevenLabs ✦</button>
+          <button class="mode-btn on" id="modeBrowser" onclick="setMode('browser')">Browser</button>
+          <button class="mode-btn" id="modeEL" onclick="setMode('elevenlabs')">ElevenLabs ✦</button>
         </div>
-
-        <!-- Browser voices -->
-        <div id="browserPanel" class="fc-row">
-          <span class="fc-label">Voice</span>
-          <select id="voiceSel"><option>Loading…</option></select>
+        <div id="browserPanel">
+          <span class="p-lbl">Voice</span>
+          <select id="voiceSel"></select>
         </div>
-
-        <!-- EL voices -->
-        <div id="elPanel" style="display:none;" class="fc-row">
-          <span class="fc-label">API Key</span>
+        <div id="elPanel" style="display:none">
+          <span class="p-lbl">API Key</span>
           <div class="api-row">
-            <input class="api-input" type="password" id="elKey" placeholder="Paste ElevenLabs API key…"/>
-            <button class="api-go" onclick="fetchELVoices()">Load</button>
+            <input class="text-in" type="password" id="elKey" placeholder="Paste ElevenLabs API key…"/>
+            <button class="api-go" onclick="loadELVoices(false)">Load</button>
           </div>
-          <span class="fc-label">Voice</span>
-          <select id="elVoiceSel" style="margin-bottom:10px;"><option value="">— load key first —</option></select>
-          <span class="fc-label">Model</span>
+          <span class="p-lbl">Voice</span>
+          <select id="elVoice" style="margin-bottom:10px"><option value="">— load key first —</option></select>
+          <span class="p-lbl">Model</span>
           <select id="elModel">
             <option value="eleven_turbo_v2_5">Turbo v2.5 — fastest</option>
             <option value="eleven_multilingual_v2" selected>Multilingual v2 — best quality</option>
           </select>
         </div>
-
-        <!-- Speed -->
-        <div class="fc-row">
-          <span class="fc-label">Speed</span>
-          <div class="slider-row">
-            <input type="range" id="rateR" min=".5" max="3.0" step=".05" value="1.15"/>
-            <span class="sval" id="rateV">0.95×</span>
-          </div>
-        </div>
-
-        <!-- Pitch -->
-        <div class="fc-row" id="pitchRow">
-          <span class="fc-label">Pitch <span style="font-size:7px;opacity:.5">(browser only)</span></span>
-          <div class="slider-row">
-            <input type="range" id="pitchR" min=".5" max="2" step=".05" value="1"/>
-            <span class="sval" id="pitchV">1.00</span>
-          </div>
-        </div>
-
-        <!-- Volume -->
-        <div class="fc-row">
-          <span class="fc-label">Volume</span>
-          <div class="slider-row">
-            <input type="range" id="volR" min="0" max="1" step=".05" value="1"/>
-            <span class="sval" id="volV">100%</span>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Extra controls -->
-      <div class="ctrl-row">
-        <button class="ctrl-btn restart" id="restartBtn" title="Restart">↩</button>
-        <button class="ctrl-btn zoom-out" onclick="zoom(-0.15)">− Zoom</button>
-        <button class="ctrl-btn zoom-in"  onclick="zoom(0.15)">+ Zoom</button>
+        <span class="p-lbl">Speed</span>
+        <div class="sl-row"><input type="range" id="speedR" min=".5" max="3" step=".05" value="1.1"/><span class="sl-val" id="speedV">1.10×</span></div>
+        <span class="p-lbl">Pitch <span style="font-size:7px;opacity:.5">(browser only)</span></span>
+        <div class="sl-row"><input type="range" id="pitchR" min=".5" max="2" step=".05" value="1"/><span class="sl-val" id="pitchV">1.00</span></div>
+        <span class="p-lbl">Volume</span>
+        <div class="sl-row"><input type="range" id="volR" min="0" max="1" step=".05" value="1"/><span class="sl-val" id="volV">100%</span></div>
       </div>
     </div>
+  </div>
+</div>
 
-  </div><!-- /player -->
-
-</div><!-- /reader -->
-
-<div class="toast" id="toast"></div>
+<div id="toast"></div>
 
 <script>
-try {
-
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 // ── State ────────────────────────────────────────────────
-let lines       = [];
-let currentIdx  = -1;
-let isPlaying   = false;
-let voices      = [];
-let pdfDoc      = null;
-let pdfScale    = 1.0;
-let pdfTextMap  = [];
-let voiceMode   = 'browser';
-let elVoices    = [];
-let currentAudio= null;
-let controlsOpen= false;
-let scriptTitle = 'Script';
-let currentScriptId = null; // ID of script currently open (for bookmarking)
+let lines = [], currentIdx = -1, isPlaying = false;
+let voices = [], elVoices = [];
+let voiceMode = 'browser';
+let pdfDoc = null, pdfScale = 1.0;
+let pdfMap = [];   // [{text, absY, absH, pageIdx}]
+let pdfCursor = 0;
+let currentAudio = null;
+let elQueue = {}, elFetching = new Set();
+let scriptId = null;
+let panelOpen = false;
+let pendingEntry = null; // for resume modal
 
-// ── Library helpers ──────────────────────────────────────
-// Library stored as: localStorage['sr_library'] = JSON array of {id, name, data(b64), bookmark, addedAt, progress}
-function getLibrary() {
-  try { return JSON.parse(localStorage.getItem('sr_library') || '[]'); } catch { return []; }
-}
-function saveLibrary(lib) {
-  try { localStorage.setItem('sr_library', JSON.stringify(lib)); } catch(e) {
-    showToast('Storage full — delete a script to free space');
-  }
-}
-function saveBookmark(idx) {
-  if (!currentScriptId) return;
-  const lib = getLibrary();
-  const entry = lib.find(e => e.id === currentScriptId);
-  if (entry) {
-    entry.bookmark = idx;
-    const total = lines.filter(l=>l.display).length;
-    const done  = lines.slice(0,idx+1).filter(l=>l.display).length;
-    entry.progress = total ? Math.round(done/total*100) : 0;
-    saveLibrary(lib);
-  }
-}
-function arrayBufferToBase64(buf) {
-  let bin=''; const bytes=new Uint8Array(buf);
-  for(let i=0;i<bytes.byteLength;i++) bin+=String.fromCharCode(bytes[i]);
-  return btoa(bin);
-}
-function base64ToArrayBuffer(b64) {
-  const bin=atob(b64); const buf=new ArrayBuffer(bin.length);
-  const view=new Uint8Array(buf);
-  for(let i=0;i<bin.length;i++) view[i]=bin.charCodeAt(i);
-  return buf;
-}
+// ── Persist helpers ───────────────────────────────────────
+function pSave(k,v){ try{localStorage.setItem(k,v);}catch(e){} try{document.cookie=`${k}=${encodeURIComponent(v)};max-age=31536000;path=/`;}catch(e){} }
+function pLoad(k){ try{const v=localStorage.getItem(k);if(v!=null)return v;}catch(e){} try{const m=document.cookie.match(new RegExp('(?:^|; )'+k+'=([^;]*)'));if(m)return decodeURIComponent(m[1]);}catch(e){} return null; }
 
-// ── Els ──────────────────────────────────────────────────
-const landing     = document.getElementById('landing');
-const reader      = document.getElementById('reader');
-const landingFile = document.getElementById('landingFile');
-const pdfViewport = document.getElementById('pdfViewport');
-const canvasWrap  = document.getElementById('pdfCanvas-wrap');
-const highlightBar= document.getElementById('highlightBar');
-const topTitle    = document.getElementById('topTitle');
-const dot         = document.getElementById('dot');
-const miniTitle   = document.getElementById('miniTitle');
-const playBtn     = document.getElementById('playBtn');
-const expandBtn   = document.getElementById('expandBtn');
-const fullControls= document.getElementById('fullControls');
-const progressFill= document.getElementById('progressFill');
-const voiceSel    = document.getElementById('voiceSel');
-const elKey       = document.getElementById('elKey');
-const elVoiceSel  = document.getElementById('elVoiceSel');
-const elModel     = document.getElementById('elModel');
-const rateR       = document.getElementById('rateR');
-const pitchR      = document.getElementById('pitchR');
-const volR        = document.getElementById('volR');
-const rateV       = document.getElementById('rateV');
-const pitchV      = document.getElementById('pitchV');
-const volV        = document.getElementById('volV');
-const closeBtn    = document.getElementById('closeBtn');
-const restartBtn  = document.getElementById('restartBtn');
-const toast       = document.getElementById('toast');
-const pageInd     = document.getElementById('pageIndicator') || document.getElementById('pageInd');
+// ── Library ───────────────────────────────────────────────
+function getLib(){ try{return JSON.parse(localStorage.getItem('sr_lib')||'[]');}catch{return [];} }
+function setLib(l){ try{localStorage.setItem('sr_lib',JSON.stringify(l));}catch(e){toast('Storage full — delete a script');} }
+function saveBookmark(){ if(!scriptId||currentIdx<0)return; const l=getLib(),e=l.find(x=>x.id===scriptId); if(e){e.bm=currentIdx;const t=lines.filter(x=>x.t).length,d=lines.slice(0,currentIdx+1).filter(x=>x.t).length;e.pct=t?Math.round(d/t*100):0;setLib(l);} }
+function b64ToArr(b){const bin=atob(b),arr=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);return arr.buffer;}
+function arrToB64(buf){let b='';const u=new Uint8Array(buf);for(let i=0;i<u.length;i++)b+=String.fromCharCode(u[i]);return btoa(b);}
 
-// ── Toast ────────────────────────────────────────────────
-function showToast(msg) {
-  toast.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2400);
-}
-
-// ── Voices ───────────────────────────────────────────────
-function loadVoices() {
-  voices = speechSynthesis.getVoices();
-  if (!voices.length) return;
-  voiceSel.innerHTML = '';
-  voices.forEach((v,i) => {
-    const o = document.createElement('option');
-    o.value = i; o.textContent = `${v.name} (${v.lang})`;
-    voiceSel.appendChild(o);
+function renderLib(){
+  const l=getLib();
+  document.getElementById('libEmpty').style.display=l.length?'none':'flex';
+  const cards=document.getElementById('libCards');
+  cards.innerHTML='';
+  l.forEach(e=>{
+    const d=document.createElement('div');
+    d.className='lib-card';
+    d.innerHTML=`<div class="lib-card-icon">${e.pdf?'📄':'📝'}</div>
+    <div class="lib-card-info">
+      <div class="lib-card-name">${e.name}</div>
+      <div class="lib-card-meta">${e.pct>0?e.pct+'% complete':'Not started'} · ${e.pdf?'PDF':'Text'}</div>
+      <div class="lib-prog-track"><div class="lib-prog-fill" style="width:${e.pct||0}%"></div></div>
+    </div>
+    <button class="lib-card-del" data-id="${e.id}">🗑</button>`;
+    d.querySelector('.lib-card-del').onclick=ev=>{ev.stopPropagation();deleteEntry(e.id);};
+    d.onclick=()=>openEntry(e);
+    cards.appendChild(d);
   });
-  const pref = voices.findIndex(v =>
-    v.lang.startsWith('en') && /natural|premium|enhanced|samantha|daniel|karen|moira|alex/i.test(v.name)
-  );
-  if (pref >= 0) voiceSel.value = pref;
-}
-speechSynthesis.addEventListener('voiceschanged', loadVoices);
-loadVoices();
-
-// ── Sliders ──────────────────────────────────────────────
-rateR.addEventListener('input',  () => rateV.textContent  = (+rateR.value).toFixed(2)+'×');
-pitchR.addEventListener('input', () => pitchV.textContent = (+pitchR.value).toFixed(2));
-volR.addEventListener('input',   () => { volV.textContent = Math.round(volR.value*100)+'%'; if(currentAudio) currentAudio.volume=+volR.value; });
-
-// ── Voice mode ───────────────────────────────────────────
-function setVoiceMode(mode) {
-  voiceMode = mode;
-  document.getElementById('modeBrowser').classList.toggle('active', mode==='browser');
-  document.getElementById('modeEL').classList.toggle('active', mode==='elevenlabs');
-  document.getElementById('browserPanel').style.display = mode==='browser' ? '' : 'none';
-  document.getElementById('elPanel').style.display = mode==='elevenlabs' ? '' : 'none';
-  persistSave('voice_mode', mode);
 }
 
-// ── ElevenLabs ───────────────────────────────────────────
-async function fetchELVoices(silent) {
-  const key = elKey.value.trim();
-  if (!key) { if(!silent) showToast('Enter your API key'); return; }
-  if (!silent) showToast('Fetching voices…');
-  try {
-    const r = await fetch('https://api.elevenlabs.io/v1/voices', {
-      method: 'GET',
-      headers: {
-        'xi-api-key': key,
-        'Accept': 'application/json',
-      },
-      mode: 'cors',
-    });
-    if (!r.ok) {
-      const err = await r.text();
-      console.error('EL voices error:', r.status, err);
-      if (!silent) showToast('Failed — check API key ('+r.status+')');
-      return;
-    }
-    const data = await r.json();
-    elVoices = data.voices || [];
-    if (!elVoices.length) { if(!silent) showToast('No voices found'); return; }
-    elVoiceSel.innerHTML = '';
-    elVoices.forEach(v => {
-      const o = document.createElement('option');
-      o.value = v.voice_id;
-      o.textContent = `${v.name} — ${v.labels?.accent || v.labels?.description || v.category || ''}`;
-      elVoiceSel.appendChild(o);
-    });
-    // Restore saved voice preference
-    const savedVoice = persistLoad('el_voice');
-    if (savedVoice) {
-      const idx = elVoices.findIndex(v => v.voice_id === savedVoice);
-      if (idx >= 0) elVoiceSel.selectedIndex = idx;
-    } else {
-      const pref = elVoices.findIndex(v => /liam|adam|rachel|bella|josh/i.test(v.name));
-      if (pref >= 0) elVoiceSel.selectedIndex = pref;
-    }
-    persistSave('el_key', key);
-    if (!silent) showToast(`${elVoices.length} voices loaded ✓`);
-  } catch(e) {
-    console.error('EL fetch error:', e);
-    if (!silent) showToast('Network error — check connection');
+function deleteEntry(id){const l=getLib().filter(e=>e.id!==id);setLib(l);renderLib();toast('Removed');}
+
+async function openEntry(e){
+  closeLib();
+  toast('Loading…');
+  if(e.pdf){
+    const buf=b64ToArr(e.data);
+    pdfDoc=await pdfjsLib.getDocument({data:buf}).promise;
+    scriptId=e.id;
+    openReader(e.name);
+    await renderPDF();
+    await buildMap();
+    buildLines(await extractText());
+    buildTaps();
+    if(e.bm>0) showResume(e);
+    else toast('Tap any line to read from there');
+  } else {
+    const text=decodeURIComponent(escape(atob(e.data)));
+    buildLines(text);
+    scriptId=e.id;
+    openReader(e.name);
+    if(e.bm>0) showResume(e);
   }
+  renderLib();
 }
 
-// Save voice selection when changed
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('elVoiceSel').addEventListener('change', () => {
-    const v = elVoices[document.getElementById('elVoiceSel').selectedIndex];
-    if (v) persistSave('el_voice', v.voice_id);
-  });
-});
-
-// ── Persistent storage helpers ───────────────────────────
-// Uses localStorage + cookie backup so Safari doesn't lose the key
-function persistSave(key, val) {
-  try { localStorage.setItem(key, val); } catch(e) {}
-  try {
-    // Cookie expires in 1 year
-    const expires = new Date(Date.now() + 365*24*60*60*1000).toUTCString();
-    document.cookie = `${key}=${encodeURIComponent(val)};expires=${expires};path=/;SameSite=Lax`;
-  } catch(e) {}
-}
-function persistLoad(key) {
-  // Try localStorage first
-  try {
-    const v = localStorage.getItem(key);
-    if (v) return v;
-  } catch(e) {}
-  // Fall back to cookie
-  try {
-    const match = document.cookie.match(new RegExp('(?:^|; )' + key + '=([^;]*)'));
-    if (match) return decodeURIComponent(match[1]);
-  } catch(e) {}
-  return null;
-}
-function persistDelete(key) {
-  try { localStorage.removeItem(key); } catch(e) {}
-  try { document.cookie = `${key}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`; } catch(e) {}
-}
-
-window.addEventListener('load', () => {
-  // Restore API key from localStorage or cookie backup
-  const savedKey  = persistLoad('el_key');
-  const savedVoice= persistLoad('el_voice');
-  const savedMode = persistLoad('voice_mode');
-
-  if (savedKey) {
-    elKey.value = savedKey;
-    // Auto-load voices silently
-    fetchELVoices(true);
-  }
-  if (savedMode) setVoiceMode(savedMode);
-});
-
-// ── ElevenLabs prefetch queue ────────────────────────────
-// Pre-fetches next line's audio while current line plays
-// so there's no gap between lines.
-let elAudioQueue = {};   // { lineIdx: { url, audio } }
-let elFetching   = new Set();
-
-async function fetchELAudio(idx) {
-  if (!lines[idx] || !lines[idx].display) return;
-  if (elAudioQueue[idx] || elFetching.has(idx)) return;
-  const key = elKey.value.trim();
-  const vid = elVoiceSel.value;
-  if (!key || !vid) return;
-  elFetching.add(idx);
-  try {
-    const text = lines[idx].speech || lines[idx].display;
-    const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}/stream`, {
-      method:'POST',
-      headers:{'xi-api-key':key,'Content-Type':'application/json'},
-      mode:'cors',
-      body: JSON.stringify({
-        text, model_id: elModel.value,
-        voice_settings:{ stability:.45, similarity_boost:.82, style:.35, use_speaker_boost:true }
-      })
-    });
-    if (!r.ok) throw new Error('EL '+r.status);
-    const blob = await r.blob();
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    audio.volume = +volR.value;
-    audio.playbackRate = +rateR.value;
-    // Preload into buffer
-    audio.load();
-    elAudioQueue[idx] = { url, audio };
-  } catch(e) {
-    console.error('EL prefetch failed for line', idx, e);
-  } finally {
-    elFetching.delete(idx);
-  }
-}
-
-function clearELQueue() {
-  Object.values(elAudioQueue).forEach(({url}) => URL.revokeObjectURL(url));
-  elAudioQueue = {};
-  elFetching.clear();
-}
-
-async function speakElevenLabs(idx, onEnd) {
-  const key = elKey.value.trim();
-  const vid = elVoiceSel.value;
-  if (!key || !vid) { showToast('Set EL key & voice'); onEnd(); return; }
-
-  // Prefetch next 2 lines in background immediately
-  const nextLines = [idx+1, idx+2].filter(i => i < lines.length && lines[i]?.display);
-  nextLines.forEach(i => fetchELAudio(i));
-
-  // Check if already prefetched
-  if (elAudioQueue[idx]) {
-    const { url, audio } = elAudioQueue[idx];
-    delete elAudioQueue[idx];
-    currentAudio = audio;
-    currentAudio.volume = +volR.value;
-    currentAudio.playbackRate = +rateR.value;
-    setDot('active');
-    try { await currentAudio.play(); } catch(e) {}
-    currentAudio.onended = () => { URL.revokeObjectURL(url); onEnd(); };
-    currentAudio.onerror = () => { URL.revokeObjectURL(url); onEnd(); };
-    return;
-  }
-
-  // Not prefetched — fetch now
-  setDot('loading');
-  try {
-    const text = lines[idx].speech || lines[idx].display;
-    const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}/stream`, {
-      method:'POST',
-      headers:{'xi-api-key':key,'Content-Type':'application/json'},
-      mode:'cors',
-      body: JSON.stringify({
-        text, model_id: elModel.value,
-        voice_settings:{ stability:.45, similarity_boost:.82, style:.35, use_speaker_boost:true }
-      })
-    });
-    if (!r.ok) throw new Error('EL '+r.status);
-    const blob = await r.blob();
-    const url = URL.createObjectURL(blob);
-    currentAudio = new Audio(url);
-    currentAudio.volume = +volR.value;
-    currentAudio.playbackRate = +rateR.value;
-    setDot('active');
-    try { await currentAudio.play(); } catch(e) {}
-    currentAudio.onended = () => { URL.revokeObjectURL(url); onEnd(); };
-    currentAudio.onerror = () => { URL.revokeObjectURL(url); onEnd(); };
-  } catch(e) {
-    console.error('EL speak error:', e);
-    setDot('idle');
-    showToast('EL error — check quota/key');
-    onEnd();
-  }
+function showResume(e){
+  pendingEntry=e;
+  document.getElementById('resumeSub').textContent=`"${e.name}" — ${e.pct||0}% complete. Continue from where you left off?`;
+  document.getElementById('resumeModal').classList.add('show');
 }
 
 // ── File handling ─────────────────────────────────────────
-landingFile.addEventListener('change', () => {
-  if (landingFile.files[0]) handleFile(landingFile.files[0]);
-  landingFile.value='';
-});
-// Init library on load
-window.addEventListener('load', () => { renderLibrary(); });
+async function handleFile(file){
+  toast('Loading…');
+  const isPdf=file.type==='application/pdf'||file.name.toLowerCase().endsWith('.pdf');
+  const name=file.name.replace(/\.[^.]+$/,'');
+  const id='s'+Date.now();
+  scriptId=id;
 
-async function handleFile(file, existingId) {
-  scriptTitle = file.name.replace(/\.[^.]+$/,'');
-  topTitle.textContent = scriptTitle;
-  miniTitle.textContent = scriptTitle;
-  showToast('Loading…');
-
-  const isPdf = file.type==='application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-  if (isPdf) {
-    const buf = await file.arrayBuffer();
-
-    // Save to library (if new file — not opening from library)
-    if (!existingId) {
-      const id = 'script_' + Date.now();
-      currentScriptId = id;
-      const lib = getLibrary();
-      try {
-        const b64 = arrayBufferToBase64(buf);
-        lib.unshift({ id, name: scriptTitle, data: b64, bookmark: -1, progress: 0, addedAt: Date.now(), isPdf: true });
-        saveLibrary(lib);
-      } catch(e) { showToast('Could not save to library — file may be too large'); }
-    } else {
-      currentScriptId = existingId;
-    }
-
-    pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
-    openReader();
-    await new Promise(r => requestAnimationFrame(r));
-    await renderAllPages();
-    const text = await extractTextWithPositions();
-    buildLines(text);
-    // Small delay to ensure offsetTops are settled, then build tap zones
-    setTimeout(() => buildTapZones(), 300);
-    renderLibrary();
-    showToast('Tap any line to read from there · ⌃ for controls');
+  if(isPdf){
+    const buf=await file.arrayBuffer();
+    // Save to library
+    try{
+      const b64=arrToB64(buf);
+      const l=getLib();
+      l.unshift({id,name,data:b64,pdf:true,bm:-1,pct:0});
+      setLib(l);
+    }catch(e){toast('File too large to save in library');}
+    pdfDoc=await pdfjsLib.getDocument({data:buf}).promise;
+    openReader(name);
+    await renderPDF();
+    await buildMap();
+    buildLines(await extractText());
+    buildTaps();
+    toast('Tap any line to start · ⌃ for controls');
   } else {
-    pdfDoc = null;
-    const fr = new FileReader();
-    fr.onload = e => {
-      const text = e.target.result;
-      if (!existingId) {
-        const id = 'script_' + Date.now();
-        currentScriptId = id;
-        const lib = getLibrary();
-        try {
-          lib.unshift({ id, name: scriptTitle, data: btoa(unescape(encodeURIComponent(text))), bookmark: -1, progress: 0, addedAt: Date.now(), isPdf: false });
-          saveLibrary(lib);
-        } catch(e) {}
-      } else {
-        currentScriptId = existingId;
-      }
-      buildLinesFromText(text);
-      openReader();
-      renderLibrary();
+    const fr=new FileReader();
+    fr.onload=ev=>{
+      const text=ev.target.result;
+      try{
+        const l=getLib();
+        l.unshift({id,name,data:btoa(unescape(encodeURIComponent(text))),pdf:false,bm:-1,pct:0});
+        setLib(l);
+      }catch(e){}
+      buildLines(text);
+      openReader(name);
+      toast('Tap any line to start · ⌃ for controls');
     };
     fr.readAsText(file);
   }
+  renderLib();
 }
 
-async function openFromLibrary(entry) {
-  closeLibrary();
-  scriptTitle = entry.name;
-  topTitle.textContent = scriptTitle;
-  miniTitle.textContent = scriptTitle;
-  showToast('Loading…');
-
-  if (entry.isPdf) {
-    const buf = base64ToArrayBuffer(entry.data);
-    pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
-    openReader();
-    await new Promise(r => requestAnimationFrame(r));
-    await renderAllPages();
-    const text = await extractTextWithPositions();
-    buildLines(text);
-    currentScriptId = entry.id;
-    setTimeout(() => buildTapZones(), 300);
-    if (entry.bookmark > 0) {
-      showResumeModal(entry);
-    } else {
-      showToast('Tap any line to read from there');
-    }
-  } else {
-    pdfDoc = null;
-    const text = decodeURIComponent(escape(atob(entry.data)));
-    buildLinesFromText(text);
-    currentScriptId = entry.id;
-    openReader();
-    if (entry.bookmark > 0) showResumeModal(entry);
-  }
+// ── Reader open/close ─────────────────────────────────────
+function openReader(name){
+  document.getElementById('topTitle').textContent=name||'Script';
+  document.getElementById('reader').classList.add('show');
+  document.getElementById('landing').style.display='none';
+  setupMediaSession(name);
 }
-
-function showResumeModal(entry) {
-  document.getElementById('resumeSub').textContent =
-    `"${entry.name}" — ${entry.progress}% complete. Continue from where you left off?`;
-  const modal = document.getElementById('resumeModal');
-  modal.classList.add('open');
-  document.getElementById('resumeFromStart').onclick = () => {
-    modal.classList.remove('open');
-    currentIdx = -1;
-    showToast('Starting from beginning');
-  };
-  document.getElementById('resumeFromBookmark').onclick = () => {
-    modal.classList.remove('open');
-    currentIdx = entry.bookmark;
-    highlightBar.style.display = 'none';
-    positionHighlight(currentIdx);
-    showToast('Resumed ✓');
-  };
+function closeReaderFn(){
+  stopSpeech(); saveBookmark();
+  document.getElementById('reader').classList.remove('show');
+  document.getElementById('landing').style.display='flex';
+  pdfDoc=null; pdfMap=[]; lines=[]; currentIdx=-1; pdfCursor=0;
+  document.getElementById('pageWrap').innerHTML='<div id="hlBar"></div>';
+  renderLib();
 }
-
-function openReader() {
-  landing.style.display = 'none';
-  reader.classList.add('open');
-  setupMediaSession();
-}
-
-closeBtn.addEventListener('click', () => {
-  stopSpeech();
-  saveBookmark(currentIdx);
-  reader.classList.remove('open');
-  landing.style.display = 'flex';
-  renderLibrary();
-});
-
-// ── Library UI ────────────────────────────────────────────
-document.getElementById('openLibBtn').addEventListener('click', openLibrary);
-document.getElementById('libCloseBtn').addEventListener('click', closeLibrary);
-document.getElementById('libFile').addEventListener('change', e => {
-  if (e.target.files[0]) { closeLibrary(); handleFile(e.target.files[0]); e.target.value=''; }
-});
-
-function openLibrary() {
-  renderLibrary();
-  document.getElementById('libraryScreen').classList.add('open');
-}
-function closeLibrary() {
-  document.getElementById('libraryScreen').classList.remove('open');
-}
-
-function renderLibrary() {
-  const lib = getLibrary();
-  const cards = document.getElementById('libCards');
-  const empty = document.getElementById('libEmpty');
-  cards.innerHTML = '';
-  empty.style.display = lib.length ? 'none' : 'flex';
-  lib.forEach(entry => {
-    const card = document.createElement('div');
-    card.className = 'lib-card';
-    card.innerHTML = `
-      <div class="lib-card-icon">${entry.isPdf ? '📄' : '📝'}</div>
-      <div class="lib-card-info">
-        <div class="lib-card-name">${entry.name}</div>
-        <div class="lib-card-meta">${entry.progress > 0 ? entry.progress+'% complete' : 'Not started'} · ${entry.isPdf ? 'PDF' : 'Text'}</div>
-        <div class="lib-card-progress"><div class="lib-card-prog-fill" style="width:${entry.progress||0}%"></div></div>
-      </div>
-      <button class="lib-card-del" data-id="${entry.id}" title="Remove">🗑</button>
-    `;
-    // Open on tap (not delete)
-    card.addEventListener('click', e => {
-      if (e.target.closest('.lib-card-del')) return;
-      openFromLibrary(entry);
-    });
-    card.querySelector('.lib-card-del').addEventListener('click', e => {
-      e.stopPropagation();
-      deleteFromLibrary(entry.id);
-    });
-    cards.appendChild(card);
-  });
-}
-
-function deleteFromLibrary(id) {
-  let lib = getLibrary();
-  lib = lib.filter(e => e.id !== id);
-  saveLibrary(lib);
-  renderLibrary();
-  showToast('Removed');
-}
-
-// Auto-save bookmark every 10 seconds while playing
-setInterval(() => { if (isPlaying && currentIdx >= 0) saveBookmark(currentIdx); }, 10000);
 
 // ── PDF rendering ─────────────────────────────────────────
-async function renderAllPages() {
-  Array.from(canvasWrap.children).forEach(c => {
-    if (c !== highlightBar) c.remove();
-  });
-  pdfTextMap = [];
+async function renderPDF(){
+  const wrap=document.getElementById('pageWrap');
+  // Remove all except hlBar
+  Array.from(wrap.children).forEach(c=>{if(c.id!=='hlBar')c.remove();});
+  const hlBar=document.getElementById('hlBar');
+  const sw=document.getElementById('pdfView').clientWidth||window.innerWidth;
+  const dpr=Math.min(window.devicePixelRatio||1,2);
 
-  // Fit PDF page to the screen width available
-  const screenW = pdfViewport.clientWidth || window.innerWidth;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2); // cap at 2x to avoid memory issues on mobile
+  for(let p=1;p<=pdfDoc.numPages;p++){
+    const page=await pdfDoc.getPage(p);
+    const base=page.getViewport({scale:1});
+    const fit=(sw/base.width)*pdfScale;
+    const vp=page.getViewport({scale:fit});
+    const dw=Math.floor(vp.width), dh=Math.floor(vp.height);
 
-  for (let p = 1; p <= pdfDoc.numPages; p++) {
-    const page = await pdfDoc.getPage(p);
+    const div=document.createElement('div');
+    div.className='pdf-page';
+    div.dataset.page=p;
+    div.dataset.scale=fit;
+    div.style.width=dw+'px';div.style.height=dh+'px';
 
-    // Get natural page size at scale=1
-    const baseVp = page.getViewport({ scale: 1 });
-    // Scale so page fills screen width, then apply user zoom
-    const fitScale = (screenW / baseVp.width) * pdfScale;
-    const vp = page.getViewport({ scale: fitScale });
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.floor(dw*dpr);canvas.height=Math.floor(dh*dpr);
+    canvas.style.width=dw+'px';canvas.style.height=dh+'px';
+    const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+    await page.render({canvasContext:ctx,viewport:vp}).promise;
 
-    const displayW = Math.floor(vp.width);
-    const displayH = Math.floor(vp.height);
-
-    const wrap = document.createElement('div');
-    wrap.className = 'page-wrap';
-    wrap.dataset.page = p;
-    // Set wrap to exactly the display size — no gaps
-    wrap.style.width  = displayW + 'px';
-    wrap.style.height = displayH + 'px';
-    wrap.style.overflow = 'hidden';
-    wrap.style.flexShrink = '0';
-
-    const canvas = document.createElement('canvas');
-    // Physical pixels (for sharpness on retina)
-    canvas.width  = Math.floor(displayW * dpr);
-    canvas.height = Math.floor(displayH * dpr);
-    // CSS size matches display size exactly
-    canvas.style.width  = displayW + 'px';
-    canvas.style.height = displayH + 'px';
-    canvas.style.display = 'block';
-
-    const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
-
-    await page.render({ canvasContext: ctx, viewport: vp }).promise;
-
-    // Store scale info on wrap for highlight positioning
-    wrap.dataset.fitScale = fitScale;
-    wrap.dataset.displayH = displayH;
-
-    wrap.appendChild(canvas);
-
-    // Invisible tap layer — populated after extractTextWithPositions
-    const tapLayer = document.createElement('div');
-    tapLayer.className = 'pdf-tap-layer';
-    tapLayer.dataset.page = p;
-    wrap.appendChild(tapLayer);
-
-    canvasWrap.insertBefore(wrap, highlightBar);
+    div.appendChild(canvas);
+    wrap.insertBefore(div,hlBar);
   }
 }
 
-// Build tap zones on top of each PDF page so users can tap a line to read from there
-function buildTapZones() {
-  if (!pdfTextMap.length || !lines.length) return;
-
-  // Clear existing tap zones
-  document.querySelectorAll('.pdf-tap-zone').forEach(z => z.remove());
-
-  const pageEls = Array.from(canvasWrap.querySelectorAll('.page-wrap'));
-
-  // For each line in lines[], find its pdfTextMap entry and create a tap zone
-  lines.forEach((line, lineIdx) => {
-    if (!line.display) return;
-    const entry = findPdfEntry(line.display);
-    if (!entry) return;
-
-    const pageEl = pageEls[entry.pageIdx];
-    if (!pageEl) return;
-    const tapLayer = pageEl.querySelector('.pdf-tap-layer');
-    if (!tapLayer) return;
-
-    const pageTop = pageEl.offsetTop;
-    const relY = entry.absY - pageTop;
-
-    const zone = document.createElement('div');
-    zone.className = 'pdf-tap-zone';
-    zone.style.top    = Math.max(0, relY - 2) + 'px';
-    zone.style.height = Math.max(entry.absH + 4, 24) + 'px';
-    zone.dataset.lineIdx = lineIdx;
-
-    zone.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const idx = parseInt(zone.dataset.lineIdx);
-      if (!isNaN(idx)) {
-        stopSpeech();
-        isPlaying = true;
-        speakFrom(idx);
-      }
+async function extractText(){
+  let txt='';
+  for(let p=1;p<=pdfDoc.numPages;p++){
+    const page=await pdfDoc.getPage(p);
+    const tc=await page.getTextContent();
+    const byY={};
+    tc.items.forEach(item=>{
+      const y=Math.round(item.transform[5]);
+      if(!byY[y])byY[y]=[];
+      byY[y].push(item);
     });
-    zone.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const idx = parseInt(zone.dataset.lineIdx);
-      if (!isNaN(idx)) {
-        stopSpeech();
-        isPlaying = true;
-        speakFrom(idx);
-      }
+    Object.keys(byY).map(Number).sort((a,b)=>b-a).forEach(y=>{
+      const row=byY[y].sort((a,b)=>a.transform[4]-b.transform[4]).map(i=>i.str).join(' ').trim();
+      if(row)txt+=row+'\n';
     });
-
-    tapLayer.appendChild(zone);
-  });
-}
-
-async function extractTextWithPositions() {
-  pdfTextMap = [];
-  let full = '';
-
-  const pageEls = Array.from(canvasWrap.querySelectorAll('.page-wrap'));
-
-  for (let p = 1; p <= pdfDoc.numPages; p++) {
-    const page = await pdfDoc.getPage(p);
-    const pageEl = pageEls[p - 1];
-    if (!pageEl) continue;
-
-    const fitScale = parseFloat(pageEl.dataset.fitScale) || pdfScale;
-    const vp = page.getViewport({ scale: fitScale });
-    const tc = await page.getTextContent();
-
-    // pageEl.offsetTop gives us the absolute top of this page in the scroll container
-    const pageTop = pageEl.offsetTop;
-
-    // Group items by Y coordinate (rounded) to reconstruct lines
-    const byY = {};
-    tc.items.forEach(item => {
-      const tx = pdfjsLib.Util.transform(vp.transform, item.transform);
-      // tx[5] is the Y position in canvas coordinates (top-down)
-      const yKey = Math.round(tx[5] / 4) * 4; // bucket into 4px groups
-      if (!byY[yKey]) byY[yKey] = [];
-      byY[yKey].push({
-        str: item.str,
-        x:   tx[4],
-        y:   tx[5] - (item.height * fitScale / (fitScale || 1)),
-        w:   item.width,
-        h:   item.height,
-      });
-    });
-
-    const ys = Object.keys(byY).map(Number).sort((a, b) => a - b);
-    ys.forEach(yKey => {
-      const row = byY[yKey].sort((a, b) => a.x - b.x);
-      const rowText = row.map(i => i.str).join(' ').trim();
-      if (!rowText) return;
-
-      const minY = Math.min(...row.map(i => i.y));
-      const maxY = Math.max(...row.map(i => i.y + i.h));
-      const minX = Math.min(...row.map(i => i.x));
-      const maxX = Math.max(...row.map(i => i.x + i.w));
-
-      pdfTextMap.push({
-        text:    rowText,
-        absY:    pageTop + minY,
-        absH:    Math.max(maxY - minY, 16),
-        minX,
-        maxX,
-        pageIdx: p - 1,
-      });
-      full += rowText + '\n';
-    });
-    full += '\n';
+    txt+='\n';
   }
-  return full;
+  return txt;
 }
 
-async function zoom(delta) {
-  pdfScale = Math.max(0.8, Math.min(4.0, pdfScale + delta));
-  if (!pdfDoc) return;
-  showToast('Rendering…');
-  await renderAllPages();
-  await extractTextWithPositions();
-  setTimeout(() => buildTapZones(), 300);
-  if (currentIdx >= 0) positionHighlight(currentIdx);
+async function buildMap(){
+  pdfMap=[];
+  const pages=Array.from(document.querySelectorAll('.pdf-page'));
+  for(let p=1;p<=pdfDoc.numPages;p++){
+    const page=await pdfDoc.getPage(p);
+    const el=pages[p-1]; if(!el) continue;
+    const fit=parseFloat(el.dataset.scale)||pdfScale;
+    const vp=page.getViewport({scale:fit});
+    const tc=await page.getTextContent();
+    const pageTop=el.offsetTop;
+    const byY={};
+    tc.items.forEach(item=>{
+      const tx=pdfjsLib.Util.transform(vp.transform,item.transform);
+      const yk=Math.round(tx[5]/3)*3;
+      if(!byY[yk])byY[yk]=[];
+      byY[yk].push({str:item.str,x:tx[4],y:tx[5]-item.height,w:item.width,h:item.height});
+    });
+    Object.keys(byY).map(Number).sort((a,b)=>a-b).forEach(yk=>{
+      const row=byY[yk].sort((a,b)=>a.x-b.x);
+      const txt=row.map(i=>i.str).join(' ').trim();
+      if(!txt)return;
+      const minY=Math.min(...row.map(i=>i.y));
+      const maxY=Math.max(...row.map(i=>i.y+i.h));
+      pdfMap.push({text:txt,absY:pageTop+minY,absH:Math.max(maxY-minY,14),pageIdx:p-1});
+    });
+  }
+}
+
+// ── Tap zones ─────────────────────────────────────────────
+function buildTaps(){
+  document.querySelectorAll('.tap-zone').forEach(z=>z.remove());
+  const pages=Array.from(document.querySelectorAll('.pdf-page'));
+  lines.forEach((ln,i)=>{
+    if(!ln.t)return;
+    const entry=findEntry(ln.t);
+    if(!entry)return;
+    const pageEl=pages[entry.pageIdx]; if(!pageEl)return;
+    const z=document.createElement('div');
+    z.className='tap-zone';
+    z.style.top=Math.max(0,entry.absY-pageEl.offsetTop-2)+'px';
+    z.style.height=Math.max(entry.absH+4,22)+'px';
+    z.dataset.idx=i;
+    const handler=()=>{stopSpeech();isPlaying=true;pdfCursor=0;speakFrom(i);};
+    z.addEventListener('click',handler);
+    z.addEventListener('touchend',ev=>{ev.preventDefault();handler();},{passive:false});
+    pageEl.appendChild(z);
+  });
 }
 
 // ── Script parsing ────────────────────────────────────────
-// Screenplay abbreviation expansion for TTS
-// Only expand unambiguous screenplay abbreviations that have dots
-// (avoids mis-expanding real words like PR, FX, etc.)
-const expansions = [
-  [/\bINT\.\/EXT\.\s*/gi, 'Interior Exterior. '],
-  [/\bINT\.\s*/gi,         'Interior. '],
-  [/\bEXT\.\s*/gi,         'Exterior. '],
-  [/\bV\.O\.\s*/gi,       'Voice over. '],
-  [/\bO\.S\.\s*/gi,       'Off screen. '],
-  [/\bO\.C\.\s*/gi,       'Off camera. '],
-  [/\bCONT\.?['']D\b/gi,   'Continued'],
-  [/\bb\.g\.\s*/gi,       'background '],
-  [/\bW\.E\.\s*/gi,       'Wide establishing. '],
-  [/\bP\.O\.V\.\s*/gi,   'Point of view. '],
-  [/\bM\.O\.S\.\s*/gi,   'without sound. '],
-  // Only expand when followed by space or end of string — avoids partial matches
-  [/\bI\.E\.\s+/gi,       'that is, '],
+const EXP=[
+  [/\bINT\.\/EXT\.\s*/gi,'Interior Exterior. '],[/\bINT\.\s*/gi,'Interior. '],[/\bEXT\.\s*/gi,'Exterior. '],
+  [/\bV\.O\.\s*/gi,'Voice over. '],[/\bO\.S\.\s*/gi,'Off screen. '],[/\bO\.C\.\s*/gi,'Off camera. '],
+  [/\bCONT\.?['']D\b/gi,'Continued'],[/\bP\.O\.V\.\s*/gi,'Point of view. '],[/\bM\.O\.S\.\s*/gi,'without sound. '],
 ];
+function expand(t){let s=t;EXP.forEach(([r,v])=>s=s.replace(r,v));return s;}
 
-function expandForSpeech(text) {
-  let t = text;
-  // Only apply expansions to lines that look like scene headings or action
-  // Skip dialogue lines to avoid mangling character speech
-  expansions.forEach(([re, val]) => t = t.replace(re, val));
-  return t;
+function classify(raw){
+  const t=raw.trim();
+  if(!t)return{t:'',type:'empty'};
+  const sp=expand(t);
+  if(/^(INT\.|EXT\.|INT\/EXT\.)\s/i.test(t)||/^FADE IN:/i.test(t))return{t,sp,type:'scene'};
+  if(/^\(.*\)$/.test(t))return{t,sp,type:'paren'};
+  if(/^(FADE TO:|CUT TO:|SMASH CUT:|DISSOLVE TO:|FADE OUT\.)/i.test(t))return{t,sp,type:'trans'};
+  if(/^[A-Z][A-Z\s\.\-'0-9]{0,30}$/.test(t)&&t.length<45)return{t,sp,type:'char'};
+  return{t,sp,type:'action'};
 }
 
-function classifyLine(raw) {
-  const t = raw.trim();
-  if (!t) return { type:'empty', display:'', speech:'' };
-  const speech = expandForSpeech(t);
-  if (/^(INT\.|EXT\.|INT\/EXT\.|I\/E\.)\s/i.test(t)||/^FADE IN:/i.test(t)) return {type:'scene',display:t,speech};
-  if (/^\(.*\)$/.test(t)) return {type:'paren',display:t,speech};
-  if (/^(FADE TO:|SMASH CUT:|CUT TO:|DISSOLVE TO:|FADE OUT\.)/i.test(t)) return {type:'trans',display:t,speech};
-  if (/^[A-Z][A-Z\s\.\-'0-9]{0,30}$/.test(t)&&t.length<45) return {type:'char',display:t,speech};
-  return {type:'action',display:t,speech};
-}
-
-function buildLines(text) {
-  const raw = text.split('\n');
-  lines = raw.map(r => classifyLine(r));
-
+function buildLines(text){
+  stopSpeech();
+  lines=text.split('\n').map(r=>classify(r));
   // Dialogue pass
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].type === 'char') {
-      for (let j = i + 1; j < lines.length; j++) {
-        if (!lines[j].display) continue;
-        if (lines[j].type === 'char' || lines[j].type === 'scene') break;
-        if (lines[j].type === 'action') lines[j].type = 'dialogue';
+  for(let i=0;i<lines.length;i++){
+    if(lines[i].type==='char'){
+      for(let j=i+1;j<lines.length;j++){
+        if(!lines[j].t)continue;
+        if(lines[j].type==='char'||lines[j].type==='scene')break;
+        if(lines[j].type==='action')lines[j].type='dialogue';
       }
     }
   }
-
-  // Block grouping: tag each character + their dialogue lines with blockStart/blockEnd
-  // so the highlight bar can span the whole speech block without jumping.
-  let i = 0;
-  while (i < lines.length) {
-    if (lines[i].type === 'char') {
-      const blockStart = i;
-      let blockEnd = i;
-      for (let j = i + 1; j < lines.length; j++) {
-        if (!lines[j].display) continue;
-        if (lines[j].type === 'char' || lines[j].type === 'scene' || lines[j].type === 'action') break;
-        blockEnd = j;
-      }
-      for (let k = blockStart; k <= blockEnd; k++) {
-        lines[k].blockStart = blockStart;
-        lines[k].blockEnd   = blockEnd;
-      }
-      i = blockEnd + 1;
-    } else {
-      i++;
-    }
-  }
-
-  currentIdx = -1;
-  resetPdfCursor();
+  currentIdx=-1; pdfCursor=0;
   updateProgress();
-  // Prefetch first 3 lines so playback starts instantly
-  if (voiceMode === 'elevenlabs') {
-    [0,1,2].forEach(i => { if(lines[i]?.display) fetchELAudio(i); });
-  }
 }
 
-function buildLinesFromText(text) {
-  buildLines(text);
-  // No PDF — show text overlay
-  canvasWrap.innerHTML = '';
-  canvasWrap.appendChild(highlightBar);
-  const textDiv = document.createElement('div');
-  textDiv.style.cssText='padding:60px 28px 160px;max-width:680px;margin:0 auto;';
-  lines.forEach((l,i) => {
-    const d = document.createElement('div');
-    d.dataset.idx = i;
-    d.style.cssText = `font-size:15px;line-height:1.85;padding:4px 8px;border-radius:4px;cursor:pointer;white-space:pre-wrap;margin-bottom:2px;font-family:'Courier Prime',monospace;color:${l.type==='char'?'#f5a623':l.type==='scene'?'#fff':'#c0d0e0'};`;
-    d.textContent = l.display||'';
-    d.addEventListener('click',()=>onTap(i));
-    textDiv.appendChild(d);
+// ── PDF entry finder (forward-only) ──────────────────────
+function findEntry(text){
+  if(!text||!pdfMap.length)return null;
+  const words=text.toLowerCase().split(/\s+/).filter(w=>w.length>2).slice(0,8);
+  if(!words.length)return null;
+  let best=null,bestScore=0;
+  pdfMap.forEach(e=>{
+    const et=e.text.toLowerCase();
+    const hits=words.filter(w=>et.includes(w)).length;
+    const score=hits/words.length;
+    if(score>bestScore&&score>0.45){bestScore=score;best=e;}
   });
-  canvasWrap.insertBefore(textDiv, highlightBar);
+  return best;
 }
 
-// ── Reader open ───────────────────────────────────────────
-// PDF viewport click — only toggles play if tap wasn't on a tap zone
-pdfViewport.addEventListener('click', (e) => {
-  if (e.target.classList.contains('pdf-tap-zone')) return;
-  if (!isPlaying && lines.length && currentIdx < 0) {
-    togglePlay();
+function findEntryForward(text){
+  if(!text||!pdfMap.length)return null;
+  const words=text.toLowerCase().split(/\s+/).filter(w=>w.length>2).slice(0,8);
+  if(!words.length)return null;
+  // Search forward from cursor in a window first
+  const win=Math.min(pdfCursor+50,pdfMap.length);
+  let best=null,bestScore=0,bestIdx=-1;
+  for(let i=pdfCursor;i<win;i++){
+    const et=pdfMap[i].text.toLowerCase();
+    const hits=words.filter(w=>et.includes(w)).length;
+    const score=hits/words.length;
+    if(score>bestScore&&score>0.45){bestScore=score;best=pdfMap[i];bestIdx=i;}
   }
+  // If not found in window, search rest of document forward
+  if(!best){
+    for(let i=pdfCursor;i<pdfMap.length;i++){
+      const et=pdfMap[i].text.toLowerCase();
+      const hits=words.filter(w=>et.includes(w)).length;
+      const score=hits/words.length;
+      if(score>bestScore&&score>0.45){bestScore=score;best=pdfMap[i];bestIdx=i;}
+    }
+  }
+  if(bestIdx>=0)pdfCursor=bestIdx+1;
+  return best;
+}
+
+// ── Highlight ─────────────────────────────────────────────
+function highlight(idx){
+  const hl=document.getElementById('hlBar');
+  if(!pdfMap.length){hl.style.display='none';return;}
+  const ln=lines[idx]; if(!ln||!ln.t)return;
+  const entry=findEntryForward(ln.t);
+  if(!entry){return;}
+  const h=Math.min(Math.max(entry.absH,16),44);
+  hl.style.display='block';
+  hl.style.top=(entry.absY-2)+'px';
+  hl.style.height=(h+4)+'px';
+  // Scroll line to ~38% from top
+  const pv=document.getElementById('pdfView');
+  pv.scrollTo({top:entry.absY-(pv.clientHeight*0.38),behavior:'smooth'});
+  // Page indicator
+  document.getElementById('pageNum').textContent=`${entry.pageIdx+1} / ${pdfDoc?pdfDoc.numPages:'?'}`;
+}
+
+// ── Voices ────────────────────────────────────────────────
+function loadBrowserVoices(){
+  voices=speechSynthesis.getVoices();
+  if(!voices.length)return;
+  const sel=document.getElementById('voiceSel');
+  sel.innerHTML='';
+  voices.forEach((v,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`${v.name} (${v.lang})`;sel.appendChild(o);});
+  const pref=voices.findIndex(v=>v.lang.startsWith('en')&&/natural|premium|enhanced|samantha|daniel|karen|moira|alex/i.test(v.name));
+  if(pref>=0)sel.value=pref;
+}
+speechSynthesis.addEventListener('voiceschanged',loadBrowserVoices);
+loadBrowserVoices();
+
+document.getElementById('voiceSel').addEventListener('change',()=>pSave('br_voice',document.getElementById('voiceSel').value));
+
+async function loadELVoices(silent){
+  const key=document.getElementById('elKey').value.trim();
+  if(!key){if(!silent)toast('Enter API key');return;}
+  if(!silent)toast('Loading voices…');
+  try{
+    const r=await fetch('https://api.elevenlabs.io/v1/voices',{headers:{'xi-api-key':key},mode:'cors'});
+    if(!r.ok)throw new Error(r.status);
+    const data=await r.json();
+    elVoices=data.voices||[];
+    const sel=document.getElementById('elVoice');
+    sel.innerHTML='';
+    elVoices.forEach(v=>{const o=document.createElement('option');o.value=v.voice_id;o.textContent=`${v.name} — ${v.labels?.accent||v.labels?.description||''}`;sel.appendChild(o);});
+    const saved=pLoad('el_voice');
+    if(saved){const i=elVoices.findIndex(v=>v.voice_id===saved);if(i>=0)sel.selectedIndex=i;}
+    else{const i=elVoices.findIndex(v=>/adam|liam|rachel|bella/i.test(v.name));if(i>=0)sel.selectedIndex=i;}
+    pSave('el_key',key);
+    if(!silent)toast(`${elVoices.length} voices loaded ✓`);
+  }catch(e){if(!silent)toast('Failed — check API key');}
+}
+
+document.getElementById('elVoice').addEventListener('change',()=>{
+  const v=elVoices[document.getElementById('elVoice').selectedIndex];
+  if(v)pSave('el_voice',v.voice_id);
 });
 
-// ── Highlight bar positioning ─────────────────────────────
-// ── PDF cursor — tracks our position in pdfTextMap so we always search forward
-let pdfCursor = 0; // index into pdfTextMap — only moves forward
-
-function resetPdfCursor() { pdfCursor = 0; }
-
-function findPdfEntryForward(lineText) {
-  // Search forward from pdfCursor — never jump backward
-  // This stops the bar bouncing up when similar text appears earlier in the PDF
-  if (!lineText || !pdfTextMap.length) return null;
-
-  const words = lineText.trim().toLowerCase()
-    .split(/\s+/)
-    .filter(w => w.length > 2)
-    .slice(0, 8);
-  if (!words.length) return null;
-
-  // First try forward from cursor within a reasonable window
-  const windowSize = 40; // look up to 40 entries ahead before giving up
-  const searchEnd  = Math.min(pdfCursor + windowSize, pdfTextMap.length);
-
-  let best = null, bestScore = 0, bestIdx = -1;
-  for (let i = pdfCursor; i < searchEnd; i++) {
-    const et = pdfTextMap[i].text.toLowerCase();
-    const hits = words.filter(w => et.includes(w)).length;
-    const score = hits / words.length;
-    if (score > bestScore && score > 0.45) {
-      bestScore = score; best = pdfTextMap[i]; bestIdx = i;
-    }
-  }
-
-  // If nothing found in window, do a full forward search from cursor
-  // (handles gaps like page breaks or skipped lines)
-  if (!best) {
-    for (let i = pdfCursor; i < pdfTextMap.length; i++) {
-      const et = pdfTextMap[i].text.toLowerCase();
-      const hits = words.filter(w => et.includes(w)).length;
-      const score = hits / words.length;
-      if (score > bestScore && score > 0.45) {
-        bestScore = score; best = pdfTextMap[i]; bestIdx = i;
-      }
-    }
-  }
-
-  // Advance cursor to just past the matched entry so next search starts here
-  if (bestIdx >= 0) pdfCursor = bestIdx + 1;
-
-  return best;
+function setMode(m){
+  voiceMode=m;
+  document.getElementById('modeBrowser').classList.toggle('on',m==='browser');
+  document.getElementById('modeEL').classList.toggle('on',m==='elevenlabs');
+  document.getElementById('browserPanel').style.display=m==='browser'?'':'none';
+  document.getElementById('elPanel').style.display=m==='elevenlabs'?'':'none';
+  pSave('voice_mode',m);
 }
 
-// Keep old findPdfEntry for tap zone building (needs full search)
-function findPdfEntry(lineText) {
-  if (!lineText || !pdfTextMap.length) return null;
-  const words = lineText.trim().toLowerCase()
-    .split(/\s+/)
-    .filter(w => w.length > 2)
-    .slice(0, 8);
-  if (!words.length) return null;
-  let best = null, bestScore = 0;
-  pdfTextMap.forEach(entry => {
-    const et = entry.text.toLowerCase();
-    const hits = words.filter(w => et.includes(w)).length;
-    const score = hits / words.length;
-    if (score > bestScore && score > 0.45) { bestScore = score; best = entry; }
-  });
-  return best;
+// ── EL prefetch queue ─────────────────────────────────────
+function clearQueue(){Object.values(elQueue).forEach(({url})=>URL.revokeObjectURL(url));elQueue={};elFetching.clear();}
+async function prefetch(idx){
+  if(!lines[idx]||!lines[idx].t||elQueue[idx]||elFetching.has(idx))return;
+  const key=document.getElementById('elKey').value.trim();
+  const vid=document.getElementById('elVoice').value;
+  if(!key||!vid)return;
+  elFetching.add(idx);
+  try{
+    const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}/stream`,{method:'POST',headers:{'xi-api-key':key,'Content-Type':'application/json'},mode:'cors',body:JSON.stringify({text:lines[idx].sp||lines[idx].t,model_id:document.getElementById('elModel').value,voice_settings:{stability:.45,similarity_boost:.82,style:.35,use_speaker_boost:true}})});
+    if(!r.ok)throw new Error(r.status);
+    const blob=await r.blob();
+    const url=URL.createObjectURL(blob);
+    const audio=new Audio(url);audio.load();
+    elQueue[idx]={url,audio};
+  }catch(e){console.error('EL prefetch',idx,e);}finally{elFetching.delete(idx);}
 }
 
-function positionHighlight(idx) {
-  if (!pdfTextMap.length) return;
-  const line = lines[idx];
-  if (!line || !line.display) return;
-
-  // Use forward-only search to prevent bar jumping backward
-  const entry = findPdfEntryForward(line.display);
-  if (!entry) return;
-
-  // Single line height — capped so it never expands beyond one row
-  const lineH = Math.min(Math.max(entry.absH, 18), 46);
-
-  highlightBar.style.display = 'block';
-  highlightBar.style.top    = (entry.absY - 2) + 'px';
-  highlightBar.style.height = (lineH + 4) + 'px';
-
-  // Scroll line to 38% from top — comfortable reading position
-  const targetScroll = entry.absY - (pdfViewport.clientHeight * 0.38);
-  pdfViewport.scrollTo({ top: targetScroll, behavior: 'smooth' });
-
-  const totalPages = pdfDoc ? pdfDoc.numPages : 1;
-  if (pageInd) pageInd.textContent = `${entry.pageIdx + 1} / ${totalPages}`;
-}
-
-// ── Tap on text overlay ───────────────────────────────────
-function onTap(idx) {
-  if (!lines.length) return;
-  stopSpeech();
-  currentIdx = idx;
-  // Reset cursor to search from beginning of PDF up to tapped position
-  // so highlight finds the right spot
-  resetPdfCursor();
-  isPlaying = true;
-  speakFrom(idx);
+async function speakEL(idx,onEnd){
+  const key=document.getElementById('elKey').value.trim();
+  const vid=document.getElementById('elVoice').value;
+  if(!key||!vid){toast('Set EL key & voice');onEnd();return;}
+  // Prefetch next 2
+  [idx+1,idx+2].forEach(i=>{if(i<lines.length&&lines[i]?.t)prefetch(i);});
+  setDot('loading');
+  const play=(url,audio)=>{
+    currentAudio=audio;
+    currentAudio.volume=+document.getElementById('volR').value;
+    currentAudio.playbackRate=+document.getElementById('speedR').value;
+    setDot('active');
+    currentAudio.play().catch(()=>{});
+    currentAudio.onended=()=>{URL.revokeObjectURL(url);onEnd();};
+    currentAudio.onerror=()=>{URL.revokeObjectURL(url);onEnd();};
+  };
+  if(elQueue[idx]){const{url,audio}=elQueue[idx];delete elQueue[idx];play(url,audio);return;}
+  try{
+    const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}/stream`,{method:'POST',headers:{'xi-api-key':key,'Content-Type':'application/json'},mode:'cors',body:JSON.stringify({text:lines[idx].sp||lines[idx].t,model_id:document.getElementById('elModel').value,voice_settings:{stability:.45,similarity_boost:.82,style:.35,use_speaker_boost:true}})});
+    if(!r.ok)throw new Error(r.status);
+    const blob=await r.blob();
+    const url=URL.createObjectURL(blob);
+    play(url,new Audio(url));
+  }catch(e){setDot('idle');toast('EL error — check key/quota');onEnd();}
 }
 
 // ── Playback ──────────────────────────────────────────────
-function setDot(state) {
-  dot.className = 'dot';
-  if (state==='active') dot.classList.add('active');
-  if (state==='loading') dot.classList.add('loading');
-}
+function setDot(s){const d=document.getElementById('dot');d.className='top-dot';if(s==='active')d.classList.add('active');if(s==='loading')d.classList.add('loading');}
+function setPlayBtn(p){document.getElementById('playBtn').textContent=p?'⏸':'▶';}
 
-function setPlayBtn(playing) {
-  playBtn.textContent = playing ? '⏸' : '▶';
-}
-
-function stopSpeech() {
+function stopSpeech(){
   speechSynthesis.cancel();
-  if (currentAudio) { currentAudio.pause(); currentAudio.src=''; currentAudio=null; }
-  clearELQueue();
-  isPlaying = false;
-  setDot('idle');
-  setPlayBtn(false);
-  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+  if(currentAudio){currentAudio.pause();currentAudio.src='';currentAudio=null;}
+  clearQueue();
+  isPlaying=false;setDot('idle');setPlayBtn(false);
+  if('mediaSession'in navigator)navigator.mediaSession.playbackState='paused';
 }
 
-// Voice dynamics: vary pitch/rate/pause per line type to sound less robotic
-function getDynamics(lineType, baseRate, basePitch) {
-  switch(lineType) {
-    case 'scene':
-      // Scene headings: slower, lower, dramatic pause before
-      return { rate: baseRate * 0.78, pitch: basePitch * 0.82, pauseBefore: 600 };
-    case 'char':
-      // Character name: slightly slower, slightly higher, short pause before
-      return { rate: baseRate * 0.88, pitch: basePitch * 1.08, pauseBefore: 350 };
-    case 'dialogue':
-      // Dialogue: natural speed, slight pitch variation
-      return { rate: baseRate * 1.0,  pitch: basePitch * 1.0,  pauseBefore: 80 };
-    case 'paren':
-      // Parentheticals: quieter, faster, softer
-      return { rate: baseRate * 1.05, pitch: basePitch * 0.92, pauseBefore: 60 };
-    case 'trans':
-      // Transitions: slow, low, long pause
-      return { rate: baseRate * 0.72, pitch: basePitch * 0.78, pauseBefore: 700 };
-    case 'action':
-    default:
-      return { rate: baseRate * 0.95, pitch: basePitch * 0.97, pauseBefore: 140 };
+function getDyn(type,rate,pitch){
+  switch(type){
+    case'scene':return{r:rate*.78,p:pitch*.82,pause:550};
+    case'char':return{r:rate*.88,p:pitch*1.07,pause:300};
+    case'paren':return{r:rate*1.05,p:pitch*.92,pause:60};
+    case'trans':return{r:rate*.72,p:pitch*.78,pause:650};
+    case'action':default:return{r:rate*.95,p:pitch*.97,pause:120};
+    case'dialogue':return{r:rate,p:pitch,pause:70};
   }
 }
 
-function speakFrom(idx) {
-  if (idx >= lines.length) { stopSpeech(); showToast('End of script'); return; }
-  if (!lines[idx].display) { currentIdx=idx; if(isPlaying) speakFrom(idx+1); return; }
-
-  currentIdx = idx;
+function speakFrom(idx){
+  if(idx>=lines.length){stopSpeech();toast('End of script');return;}
+  if(!lines[idx].t){currentIdx=idx;if(isPlaying)speakFrom(idx+1);return;}
+  currentIdx=idx;
+  highlight(idx);
   updateProgress();
-  positionHighlight(idx);
-  setPlayBtn(true);
-  setDot('active');
-  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
-
-  const line = lines[idx];
-  const speechText = line.speech || line.display;
-
-  if (voiceMode==='elevenlabs') {
-    // Prefetch current line if not already in queue
-    if (!elAudioQueue[idx] && !elFetching.has(idx)) {
-      fetchELAudio(idx).then(() => {
-        if (isPlaying && currentIdx === idx) speakElevenLabs(idx, () => { if(isPlaying) speakFrom(idx+1); });
-      });
-    } else {
-      speakElevenLabs(idx, () => { if(isPlaying) speakFrom(idx+1); });
-    }
+  setPlayBtn(true);setDot('active');
+  if('mediaSession'in navigator)navigator.mediaSession.playbackState='playing';
+  const ln=lines[idx];
+  if(voiceMode==='elevenlabs'){
+    speakEL(idx,()=>{if(isPlaying)speakFrom(idx+1);});
   } else {
-    const dyn = getDynamics(line.type, +rateR.value, +pitchR.value);
-    const doSpeak = () => {
-      const voice = voices[parseInt(voiceSel.value)];
-      const utt = new SpeechSynthesisUtterance(speechText);
-      if (voice) utt.voice = voice;
-      utt.rate   = dyn.rate;
-      utt.pitch  = dyn.pitch;
-      utt.volume = +volR.value;
-      utt.onend   = () => { if(isPlaying) speakFrom(idx+1); };
-      utt.onerror = e => { if(e.error!=='interrupted'&&isPlaying) speakFrom(idx+1); };
-      speechSynthesis.speak(utt);
+    const dyn=getDyn(ln.type,+document.getElementById('speedR').value,+document.getElementById('pitchR').value);
+    const go=()=>{
+      const v=voices[parseInt(document.getElementById('voiceSel').value)];
+      const u=new SpeechSynthesisUtterance(ln.sp||ln.t);
+      if(v)u.voice=v;u.rate=dyn.r;u.pitch=dyn.p;u.volume=+document.getElementById('volR').value;
+      u.onend=()=>{if(isPlaying)speakFrom(idx+1);};
+      u.onerror=e=>{if(e.error!=='interrupted'&&isPlaying)speakFrom(idx+1);};
+      speechSynthesis.speak(u);
     };
-    // Natural pause before certain line types
-    if (dyn.pauseBefore > 100) {
-      setTimeout(doSpeak, dyn.pauseBefore);
-    } else {
-      doSpeak();
-    }
+    dyn.pause>100?setTimeout(go,dyn.pause):go();
   }
 }
 
-function updateProgress() {
-  const total = lines.filter(l=>l.display).length;
-  const done  = lines.slice(0,currentIdx+1).filter(l=>l.display).length;
-  const pct   = total ? (done/total*100) : 0;
-  progressFill.style.width = pct+'%';
-  // Move thumb to match fill
-  const thumb = document.getElementById('progressThumb');
-  thumb.style.left = pct+'%';
-  thumb.style.right = 'auto';
-  // Update labels
-  document.getElementById('progLineCount').textContent = total ? `${done} / ${total}` : '— / —';
-  // Estimate time remaining (avg ~3 seconds per line at default speed)
-  const rate = +rateR.value || 1;
-  const secPerLine = 3 / rate;
-  const elapsed   = Math.round(done * secPerLine);
-  const remaining = Math.round((total - done) * secPerLine);
-  document.getElementById('progCurrent').textContent = formatTime(elapsed);
-  document.getElementById('progTotal').textContent   = '-' + formatTime(remaining);
+// ── Progress ──────────────────────────────────────────────
+function updateProgress(){
+  const total=lines.filter(l=>l.t).length;
+  const done=lines.slice(0,currentIdx+1).filter(l=>l.t).length;
+  const pct=total?(done/total*100):0;
+  document.getElementById('scrubFill').style.width=pct+'%';
+  document.getElementById('scrubThumb').style.left=pct+'%';
+  document.getElementById('lblMid').textContent=total?`${done} / ${total}`:'— / —';
+  const rate=+document.getElementById('speedR').value||1;
+  const spl=3/rate;
+  document.getElementById('lblLeft').textContent=fmt(Math.round(done*spl));
+  document.getElementById('lblRight').textContent='-'+fmt(Math.round((total-done)*spl));
 }
+function fmt(s){const m=Math.floor(s/60);return`${m}:${(s%60).toString().padStart(2,'0')}`;}
 
-function formatTime(secs) {
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
-  return `${m}:${s.toString().padStart(2,'0')}`;
-}
+// ── Scrubber ──────────────────────────────────────────────
+(function(){
+  const wrap=document.getElementById('scrubWrap');
+  const track=document.getElementById('scrubTrack');
+  const fill=document.getElementById('scrubFill');
+  const thumb=document.getElementById('scrubThumb');
+  const tip=document.getElementById('scrubTooltip');
+  let drag=false,wasPlay=false;
 
-// ── Scrubber interaction ──────────────────────────────────
-(function initScrubber() {
-  const wrap    = document.getElementById('progressWrap');
-  const track   = document.getElementById('progressTrack');
-  const fill    = document.getElementById('progressFill');
-  const thumb   = document.getElementById('progressThumb');
-  const tooltip = document.getElementById('scrubTooltip');
-  let dragging  = false;
-  let wasPlaying = false;
-
-  function getPctFromEvent(e) {
-    const rect  = track.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  function pct(e){const r=track.getBoundingClientRect(),x=e.touches?e.touches[0].clientX:e.clientX;return Math.max(0,Math.min(1,(x-r.left)/r.width));}
+  function idxFrom(p){const dl=lines.map((l,i)=>l.t?i:-1).filter(i=>i>=0);if(!dl.length)return 0;return dl[Math.min(Math.floor(p*dl.length),dl.length-1)];}
+  function setScrub(p){fill.style.width=(p*100)+'%';thumb.style.left=(p*100)+'%';}
+  function showTip(p,cx){
+    const idx=idxFrom(p);const ln=lines[idx];if(!ln)return;
+    const snip=(ln.t||'').slice(0,30)+((ln.t||'').length>30?'…':'');
+    tip.textContent=`${Math.round(p*100)}% · ${snip}`;
+    const r=track.getBoundingClientRect();
+    tip.style.left=Math.max(40,Math.min(r.width-40,cx-r.left))+'px';
+    tip.classList.add('show');
   }
-
-  function getLineIdxFromPct(pct) {
-    const displayLines = lines.map((l,i) => l.display ? i : -1).filter(i => i >= 0);
-    if (!displayLines.length) return 0;
-    const targetPos = Math.floor(pct * displayLines.length);
-    return displayLines[Math.min(targetPos, displayLines.length-1)];
+  function onStart(e){drag=true;wasPlay=isPlaying;wrap.classList.add('drag');if(wasPlay)stopSpeech();setScrub(pct(e));showTip(pct(e),(e.touches?e.touches[0]:e).clientX);}
+  function onMove(e){if(!drag)return;setScrub(pct(e));showTip(pct(e),(e.touches?e.touches[0]:e).clientX);}
+  function onEnd(e){
+    if(!drag)return;drag=false;wrap.classList.remove('drag');tip.classList.remove('show');
+    const p=pct(e.changedTouches?{clientX:e.changedTouches[0].clientX}:e);
+    setScrub(p);const idx=idxFrom(p);currentIdx=idx;pdfCursor=0;updateProgress();
+    if(wasPlay){isPlaying=true;speakFrom(idx);}else{highlight(idx);}
   }
-
-  function showTooltipAt(pct, clientX) {
-    const idx = getLineIdxFromPct(pct);
-    const line = lines[idx];
-    if (!line) return;
-    // Show a snippet of the line text
-    const snippet = (line.display || '').slice(0, 28) + (line.display?.length > 28 ? '…' : '');
-    const total = lines.filter(l=>l.display).length;
-    const done  = lines.slice(0,idx+1).filter(l=>l.display).length;
-    tooltip.textContent = `${Math.round(pct*100)}% · ${snippet}`;
-    // Position tooltip above thumb
-    const rect = track.getBoundingClientRect();
-    const x = Math.max(40, Math.min(rect.width - 40, clientX - rect.left));
-    tooltip.style.left = x + 'px';
-    tooltip.classList.add('show');
-  }
-
-  function scrubTo(pct) {
-    const idx = getLineIdxFromPct(pct);
-    fill.style.width = (pct*100)+'%';
-    thumb.style.left = (pct*100)+'%';
-    thumb.style.right = 'auto';
-    return idx;
-  }
-
-  // Mouse events
-  track.addEventListener('mousedown', e => {
-    dragging = true; wasPlaying = isPlaying;
-    wrap.classList.add('dragging');
-    if (wasPlaying) stopSpeech();
-    const pct = getPctFromEvent(e);
-    scrubTo(pct);
-    showTooltipAt(pct, e.clientX);
-  });
-  document.addEventListener('mousemove', e => {
-    if (!dragging) return;
-    const pct = getPctFromEvent(e);
-    scrubTo(pct);
-    showTooltipAt(pct, e.clientX);
-  });
-  document.addEventListener('mouseup', e => {
-    if (!dragging) return;
-    dragging = false;
-    wrap.classList.remove('dragging');
-    tooltip.classList.remove('show');
-    const pct = getPctFromEvent(e);
-    const idx = scrubTo(pct);
-    currentIdx = idx;
-    resetPdfCursor();
-    updateProgress();
-    if (wasPlaying) { isPlaying=true; speakFrom(idx); }
-    else positionHighlight(idx);
-  });
-
-  // Touch events for mobile
-  track.addEventListener('touchstart', e => {
-    e.preventDefault();
-    dragging = true; wasPlaying = isPlaying;
-    wrap.classList.add('dragging');
-    if (wasPlaying) stopSpeech();
-    const pct = getPctFromEvent(e);
-    scrubTo(pct);
-    showTooltipAt(pct, e.touches[0].clientX);
-  }, { passive: false });
-  document.addEventListener('touchmove', e => {
-    if (!dragging) return;
-    e.preventDefault();
-    const pct = getPctFromEvent(e);
-    scrubTo(pct);
-    showTooltipAt(pct, e.touches[0].clientX);
-  }, { passive: false });
-  document.addEventListener('touchend', e => {
-    if (!dragging) return;
-    dragging = false;
-    wrap.classList.remove('dragging');
-    tooltip.classList.remove('show');
-    const pct = getPctFromEvent(e);
-    const idx = scrubTo(pct);
-    currentIdx = idx;
-    resetPdfCursor();
-    updateProgress();
-    if (wasPlaying) { isPlaying=true; speakFrom(idx); }
-    else positionHighlight(idx);
-  });
+  track.addEventListener('mousedown',onStart);
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onEnd);
+  track.addEventListener('touchstart',onStart,{passive:false});
+  document.addEventListener('touchmove',e=>{if(drag){e.preventDefault();onMove(e);}},{passive:false});
+  document.addEventListener('touchend',onEnd);
 })();
 
-function togglePlay() {
-  if (!lines.length) { showToast('Load a script first'); return; }
-  if (isPlaying) { stopSpeech(); }
-  else { isPlaying=true; speakFrom(currentIdx>=0?currentIdx:0); }
-}
-
 // ── Controls ──────────────────────────────────────────────
-playBtn.addEventListener('click', togglePlay);
-restartBtn.addEventListener('click', () => {
-  stopSpeech(); currentIdx=-1;
-  highlightBar.style.display='none';
-  updateProgress(); showToast('Restarted');
+document.getElementById('playBtn').addEventListener('click',()=>{
+  if(!lines.length){toast('Load a script first');return;}
+  if(isPlaying)stopSpeech();
+  else{isPlaying=true;speakFrom(currentIdx>=0?currentIdx:0);}
 });
 
-// Expand / collapse controls
-expandBtn.addEventListener('click', () => {
-  controlsOpen = !controlsOpen;
-  fullControls.classList.toggle('open', controlsOpen);
-  expandBtn.textContent = controlsOpen ? '⌄' : '⌃';
+document.getElementById('restartBtn').addEventListener('click',()=>{
+  stopSpeech();currentIdx=-1;pdfCursor=0;
+  document.getElementById('hlBar').style.display='none';
+  document.getElementById('pdfView').scrollTo({top:0,behavior:'smooth'});
+  updateProgress();toast('Back to beginning');
 });
+
+document.getElementById('back10Btn').addEventListener('click',()=>{
+  const was=isPlaying;stopSpeech();
+  let steps=0,idx=currentIdx-1;
+  while(idx>0&&steps<10){if(lines[idx].t)steps++;if(steps<10)idx--;}
+  idx=Math.max(0,idx);currentIdx=idx;pdfCursor=0;updateProgress();highlight(idx);
+  if(was){isPlaying=true;speakFrom(idx);}toast('← 10 lines');
+});
+
+document.getElementById('fwd10Btn').addEventListener('click',()=>{
+  const was=isPlaying;stopSpeech();
+  let steps=0,idx=currentIdx+1;
+  while(idx<lines.length-1&&steps<10){if(lines[idx].t)steps++;if(steps<10)idx++;}
+  idx=Math.min(lines.length-1,idx);currentIdx=idx;pdfCursor=0;updateProgress();highlight(idx);
+  if(was){isPlaying=true;speakFrom(idx);}toast('10 lines →');
+});
+
+document.getElementById('expandBtn').addEventListener('click',()=>{
+  panelOpen=!panelOpen;
+  document.getElementById('panel').classList.toggle('open',panelOpen);
+  document.getElementById('expandBtn').textContent=panelOpen?'⌄':'⌃';
+});
+
+document.getElementById('closeReader').addEventListener('click',closeReaderFn);
+
+// ── Sliders ───────────────────────────────────────────────
+document.getElementById('speedR').addEventListener('input',()=>document.getElementById('speedV').textContent=(+document.getElementById('speedR').value).toFixed(2)+'×');
+document.getElementById('pitchR').addEventListener('input',()=>document.getElementById('pitchV').textContent=(+document.getElementById('pitchR').value).toFixed(2));
+document.getElementById('volR').addEventListener('input',()=>{document.getElementById('volV').textContent=Math.round(document.getElementById('volR').value*100)+'%';if(currentAudio)currentAudio.volume=+document.getElementById('volR').value;});
+
+// ── Library & landing buttons ─────────────────────────────
+document.getElementById('openLibBtn').addEventListener('click',()=>{renderLib();document.getElementById('library').classList.add('show');});
+document.getElementById('closeLibBtn').addEventListener('click',closeLib);
+function closeLib(){document.getElementById('library').classList.remove('show');}
+
+document.getElementById('openFile').addEventListener('change',e=>{if(e.target.files[0]){handleFile(e.target.files[0]);}e.target.value='';});
+document.getElementById('libFile').addEventListener('change',e=>{if(e.target.files[0]){closeLib();handleFile(e.target.files[0]);}e.target.value='';});
+
+// ── Resume modal ──────────────────────────────────────────
+document.getElementById('resumeStart').addEventListener('click',()=>{document.getElementById('resumeModal').classList.remove('show');currentIdx=-1;toast('Starting from beginning');});
+document.getElementById('resumeResume').addEventListener('click',()=>{document.getElementById('resumeModal').classList.remove('show');if(pendingEntry&&pendingEntry.bm>0){currentIdx=pendingEntry.bm;pdfCursor=0;highlight(currentIdx);updateProgress();toast('Resumed ✓');}pendingEntry=null;});
 
 // ── Media Session ─────────────────────────────────────────
-function setupMediaSession() {
-  if (!('mediaSession' in navigator)) return;
-  navigator.mediaSession.metadata = new MediaMetadata({
-    title: scriptTitle, artist: 'HammerHead Studios', album: 'Script Reader'
-  });
-  navigator.mediaSession.setActionHandler('play',         ()=>{ isPlaying=true; speakFrom(currentIdx>=0?currentIdx:0); });
-  navigator.mediaSession.setActionHandler('pause',        ()=>stopSpeech());
-  navigator.mediaSession.setActionHandler('nexttrack',    ()=>{ stopSpeech(); isPlaying=true; speakFrom(currentIdx+1); });
-  navigator.mediaSession.setActionHandler('previoustrack',()=>{ stopSpeech(); isPlaying=true; speakFrom(Math.max(0,currentIdx-1)); });
+function setupMediaSession(title){
+  if(!('mediaSession'in navigator))return;
+  navigator.mediaSession.metadata=new MediaMetadata({title:title||'Script',artist:'HammerHead Studios',album:'Script Reader'});
+  navigator.mediaSession.setActionHandler('play',()=>{if(!isPlaying){isPlaying=true;speakFrom(currentIdx>=0?currentIdx:0);}});
+  navigator.mediaSession.setActionHandler('pause',()=>stopSpeech());
+  navigator.mediaSession.setActionHandler('nexttrack',()=>{stopSpeech();isPlaying=true;speakFrom(currentIdx+1);});
+  navigator.mediaSession.setActionHandler('previoustrack',()=>{stopSpeech();isPlaying=true;speakFrom(Math.max(0,currentIdx-1));});
 }
 
-// ── PWA service worker ───────────────────────────────────
-if ('serviceWorker' in navigator) {
-  const sw = `self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).catch(()=>new Response(''))));`;
-  navigator.serviceWorker.register(
-    URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))
-  ).catch(()=>{});
-}
+// ── Toast ─────────────────────────────────────────────────
+let toastTimer;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);}
 
-} catch(fatalErr) {
-  console.error('Script fatal error:', fatalErr);
-  // Show a friendly message and allow file picking to still work
-  document.addEventListener('DOMContentLoaded', () => {
-    const err = document.createElement('div');
-    err.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#e85050;color:#fff;padding:12px 20px;border-radius:12px;font-family:sans-serif;font-size:13px;z-index:9999;max-width:90%;text-align:center;';
-    err.textContent = 'App error — please hard refresh (hold reload button)';
-    document.body.appendChild(err);
-  });
+// ── Auto-save bookmark ────────────────────────────────────
+setInterval(()=>{if(isPlaying&&currentIdx>=0)saveBookmark();},10000);
+
+// ── Restore settings on load ──────────────────────────────
+window.addEventListener('load',()=>{
+  renderLib();
+  const savedMode=pLoad('voice_mode');if(savedMode)setMode(savedMode);
+  const savedKey=pLoad('el_key');if(savedKey)document.getElementById('elKey').value=savedKey;
+  if(savedKey)loadELVoices(true);
+  const savedVoice=pLoad('br_voice');if(savedVoice)document.getElementById('voiceSel').value=savedVoice;
+});
+
+// ── Zoom ──────────────────────────────────────────────────
+async function zoom(delta){pdfScale=Math.max(0.6,Math.min(3,pdfScale+delta));if(!pdfDoc)return;toast('Rendering…');await renderPDF();await buildMap();setTimeout(buildTaps,200);}
+
+// ── Service Worker ────────────────────────────────────────
+if('serviceWorker'in navigator){
+  const sw=`self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).catch(()=>new Response(''))));`;
+  navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});
 }
 </script>
 </body>

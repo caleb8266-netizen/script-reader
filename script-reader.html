@@ -230,20 +230,44 @@ body{font-family:'Inter',sans-serif;color:var(--text);display:flex;flex-directio
 
 /* Mini bar (always visible) */
 #miniBar{
-  display:flex;align-items:center;gap:12px;
-  padding:12px 18px 10px;
+  display:flex;align-items:center;gap:8px;
+  padding:10px 14px 8px;
 }
-.mini-title{flex:1;font-size:12px;color:rgba(255,255,255,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mini-title{flex:1;font-size:11px;color:rgba(255,255,255,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .mini-play{
-  width:44px;height:44px;border-radius:50%;
+  width:48px;height:48px;border-radius:50%;
   background:var(--accent);border:none;
-  color:#0a0a0a;font-size:18px;cursor:pointer;
+  color:#0a0a0a;font-size:20px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   flex-shrink:0;transition:all .15s;
   box-shadow:0 0 16px rgba(245,166,35,.3);
 }
 .mini-play:active{transform:scale(.94);}
-.mini-skip{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.07);border:none;color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+/* Restart button */
+.mini-restart{
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(255,255,255,.07);border:none;
+  color:var(--accent2);font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:all .15s;
+}
+.mini-restart:active{transform:scale(.9);}
+/* Skip buttons with label */
+.mini-skip-wrap{
+  display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;
+}
+.mini-skip{
+  width:38px;height:38px;border-radius:50%;
+  background:rgba(255,255,255,.07);border:none;
+  color:var(--text);font-size:15px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.mini-skip:active{transform:scale(.9);}
+.mini-skip-lbl{
+  font-family:'Orbitron',sans-serif;font-size:7px;
+  color:var(--dim);letter-spacing:.08em;
+}
 .mini-expand{background:none;border:none;color:var(--dim);font-size:13px;cursor:pointer;padding:4px;flex-shrink:0;}
 
 /* Progress bar */
@@ -446,10 +470,32 @@ input[type=range]{flex:1;accent-color:var(--accent);height:4px;cursor:pointer;}
 
     <!-- Mini bar -->
     <div id="miniBar">
-      <span class="mini-title" id="miniTitle">Load a script to begin</span>
-      <button class="mini-skip" id="prevBtn" title="Previous">⏮</button>
+      <!-- Restart from beginning -->
+      <button class="mini-restart" id="restartTopBtn" title="Start from beginning">⟳</button>
+
+      <!-- 10s back -->
+      <div class="mini-skip-wrap">
+        <button class="mini-skip" id="back10Btn" title="10 lines back">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
+          </svg>
+        </button>
+        <span class="mini-skip-lbl">10</span>
+      </div>
+
+      <!-- Play / Pause -->
       <button class="mini-play" id="playBtn">▶</button>
-      <button class="mini-skip" id="skipBtn" title="Next">⏭</button>
+
+      <!-- 10s forward -->
+      <div class="mini-skip-wrap">
+        <button class="mini-skip" id="fwd10Btn" title="10 lines forward">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-4.5"/>
+          </svg>
+        </button>
+        <span class="mini-skip-lbl">10</span>
+      </div>
+
       <button class="mini-expand" id="expandBtn">⌃</button>
     </div>
 
@@ -593,8 +639,6 @@ const topTitle    = document.getElementById('topTitle');
 const dot         = document.getElementById('dot');
 const miniTitle   = document.getElementById('miniTitle');
 const playBtn     = document.getElementById('playBtn');
-const prevBtn     = document.getElementById('prevBtn');
-const skipBtn     = document.getElementById('skipBtn');
 const expandBtn   = document.getElementById('expandBtn');
 const fullControls= document.getElementById('fullControls');
 const progressFill= document.getElementById('progressFill');

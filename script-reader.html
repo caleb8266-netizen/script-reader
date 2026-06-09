@@ -1715,16 +1715,6 @@ function togglePlay() {
 
 // ── Controls ──────────────────────────────────────────────
 playBtn.addEventListener('click', togglePlay);
-prevBtn.addEventListener('click', () => {
-  stopSpeech();
-  const prev = Math.max(0, currentIdx - 1);
-  isPlaying = true; speakFrom(prev);
-});
-skipBtn.addEventListener('click', () => {
-  stopSpeech();
-  const next = currentIdx + 1;
-  if (next < lines.length) { isPlaying=true; speakFrom(next); }
-});
 restartBtn.addEventListener('click', () => {
   stopSpeech(); currentIdx=-1;
   highlightBar.style.display='none';

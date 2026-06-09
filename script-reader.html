@@ -891,30 +891,7 @@ function getDyn(type,rate,pitch){
   }
 }
 
-function speakFrom(idx){
-  if(idx>=lines.length){stopSpeech();toast('End of script');return;}
-  if(!lines[idx].t){currentIdx=idx;if(isPlaying)speakFrom(idx+1);return;}
-  currentIdx=idx;
-  highlight(idx);
-  updateProgress();
-  setPlayBtn(true);setDot('active');
-  if('mediaSession'in navigator)navigator.mediaSession.playbackState='playing';
-  const ln=lines[idx];
-  if(voiceMode==='elevenlabs'){
-    speakEL(idx,()=>{if(isPlaying)speakFrom(idx+1);});
-  } else {
-    const dyn=getDyn(ln.type,+document.getElementById('speedR').value,+document.getElementById('pitchR').value);
-    const go=()=>{
-      const v=voices[parseInt(document.getElementById('voiceSel').value)];
-      const u=new SpeechSynthesisUtterance(ln.sp||ln.t);
-      if(v)u.voice=v;u.rate=dyn.r;u.pitch=dyn.p;u.volume=+document.getElementById('volR').value;
-      u.onend=()=>{if(isPlaying)speakFrom(idx+1);};
-      u.onerror=e=>{if(e.error!=='interrupted'&&isPlaying)speakFrom(idx+1);};
-      speechSynthesis.speak(u);
-    };
-    dyn.pause>100?setTimeout(go,dyn.pause):go();
-  }
-}
+
 
 // ── Progress ──────────────────────────────────────────────
 function updateProgress(){
@@ -1152,9 +1129,6 @@ function setCharFilter(name){
   if(idx>=0){stopSpeech();isPlaying=true;speakFrom(idx);}
 }
 
-// Override speakFrom to respect character filter
-const _origSpeakFrom = speakFrom;
-// Wrap speakFrom to skip non-matching lines when filter active
 function speakFrom(idx){
   if(idx>=lines.length){stopSpeech();toast('End of script');return;}
   // Skip lines that don't belong to filtered character

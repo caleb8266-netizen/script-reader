@@ -98,7 +98,11 @@ body{font-family:'Inter',sans-serif;color:var(--text);display:flex;flex-directio
 #reader.show{display:flex;}
 
 /* PDF viewport */
-#pdfView{flex:1;overflow-y:auto;overflow-x:hidden;background:#1a1a1a;position:relative;}
+#pdfView{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  background:#1a1a1a;position:relative;
+  -webkit-overflow-scrolling:touch; /* smooth momentum scrolling on iOS */
+}
 #pdfView::-webkit-scrollbar{display:none;}
 #pageWrap{display:block;width:100%;position:relative;}
 .pdf-page{position:relative;display:block;margin:0 auto 3px;background:#fff;overflow:hidden;}
@@ -171,6 +175,42 @@ select,input.text-in{width:100%;background:var(--panel2);border:1px solid var(--
 .sl-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
 input[type=range]{flex:1;accent-color:var(--accent);}
 .sl-val{font-size:10px;color:var(--accent);min-width:36px;text-align:right;font-family:'Orbitron',sans-serif;}
+
+/* Speed presets */
+.speed-presets{display:flex;gap:6px;margin-bottom:12px;}
+.sp-btn{
+  flex:1;padding:8px 0;
+  background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+  color:var(--dim);font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:.08em;
+  cursor:pointer;transition:all .15s;
+}
+.sp-btn:active{transform:scale(.95);}
+.sp-btn.on{background:rgba(245,166,35,.15);border-color:var(--accent);color:var(--accent);}
+
+/* Dark mode toggle */
+.dm-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.dm-lbl{font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;}
+.toggle{
+  width:44px;height:24px;border-radius:12px;
+  background:rgba(255,255,255,.1);border:none;cursor:pointer;
+  position:relative;transition:background .25s;flex-shrink:0;
+}
+.toggle.on{background:var(--accent);}
+.toggle::after{
+  content:'';position:absolute;top:3px;left:3px;
+  width:18px;height:18px;border-radius:50%;background:#fff;
+  transition:transform .25s;
+}
+.toggle.on::after{transform:translateX(20px);}
+
+/* Dark PDF mode — CSS filter on canvas */
+.pdf-page.dark canvas{filter:invert(1) hue-rotate(180deg);}
+/* Keep highlight visible in dark mode */
+.pdf-page.dark ~ #hlBar,
+#pageWrap.darkpdf #hlBar{
+  background:rgba(245,166,35,.35);
+  border-color:rgba(245,166,35,.95);
+}
 
 /* Toast */
 #toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(25,25,25,.95);color:#fff;font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:.1em;padding:9px 18px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;text-transform:uppercase;white-space:nowrap;border:1px solid var(--border);}
@@ -297,7 +337,7 @@ input[type=range]{flex:1;accent-color:var(--accent);}
         <div id="elPanel" style="display:none">
           <span class="p-lbl">API Key</span>
           <div class="api-row">
-            <input class="text-in" type="password" id="elKey" placeholder="Paste ElevenLabs API key…"/>
+            <input class="text-in" type="password" id="elKey" placeholder="Paste ElevenLabs API key…" oninput="pSave('el_key',this.value)"/>
             <button class="api-go" onclick="loadELVoices(false)">Load</button>
           </div>
           <span class="p-lbl">Voice</span>
@@ -309,11 +349,42 @@ input[type=range]{flex:1;accent-color:var(--accent);}
           </select>
         </div>
         <span class="p-lbl">Speed</span>
+        <div class="speed-presets">
+          <button class="sp-btn" onclick="setSpeed(0.75)">0.75×</button>
+          <button class="sp-btn" onclick="setSpeed(1.0)">1×</button>
+          <button class="sp-btn on" onclick="setSpeed(1.1)">1.1×</button>
+          <button class="sp-btn" onclick="setSpeed(1.5)">1.5×</button>
+          <button class="sp-btn" onclick="setSpeed(2.0)">2×</button>
+        </div>
         <div class="sl-row"><input type="range" id="speedR" min=".5" max="3" step=".05" value="1.1"/><span class="sl-val" id="speedV">1.10×</span></div>
+
+        <div class="dm-row">
+          <span class="dm-lbl">Dark PDF Mode</span>
+          <button class="toggle" id="darkToggle" onclick="toggleDark()"></button>
+        </div>
+
+        <div class="dm-row" style="margin-top:4px;">
+          <span class="dm-lbl">Character Filter</span>
+          <button class="toggle" id="charToggle" onclick="toggleCharFilter()"></button>
+        </div>
+        <select id="charSelect" style="display:none;margin-bottom:10px;" onchange="setCharFilter(this.value)">
+          <option value="">— All characters —</option>
+        </select>
         <span class="p-lbl">Pitch <span style="font-size:7px;opacity:.5">(browser only)</span></span>
         <div class="sl-row"><input type="range" id="pitchR" min=".5" max="2" step=".05" value="1"/><span class="sl-val" id="pitchV">1.00</span></div>
         <span class="p-lbl">Volume</span>
         <div class="sl-row"><input type="range" id="volR" min="0" max="1" step=".05" value="1"/><span class="sl-val" id="volV">100%</span></div>
+
+        <div class="dm-row" style="margin-top:4px;">
+          <span class="dm-lbl">Sleep Timer</span>
+          <div style="display:flex;gap:6px;">
+            <button class="sp-btn" style="flex:none;padding:7px 10px;" onclick="setSleep(20)">20m</button>
+            <button class="sp-btn" style="flex:none;padding:7px 10px;" onclick="setSleep(30)">30m</button>
+            <button class="sp-btn" style="flex:none;padding:7px 10px;" onclick="setSleep(60)">60m</button>
+            <button class="sp-btn" style="flex:none;padding:7px 10px;" id="sleepOffBtn" onclick="setSleep(0)">Off</button>
+          </div>
+        </div>
+        <div id="sleepStatus" style="font-family:'Orbitron',sans-serif;font-size:8px;color:var(--accent2);letter-spacing:.1em;margin-top:4px;display:none;"></div>
       </div>
     </div>
   </div>
@@ -382,6 +453,7 @@ async function openEntry(e){
     await renderPDF();
     await buildMap();
     buildLines(await extractText());
+    buildLineEntryMap();
     buildTaps();
     if(e.bm>0) showResume(e);
     else toast('Tap any line to read from there');
@@ -423,6 +495,7 @@ async function handleFile(file){
     await renderPDF();
     await buildMap();
     buildLines(await extractText());
+    buildLineEntryMap();
     buildTaps();
     toast('Tap any line to start · ⌃ for controls');
   } else {
@@ -540,23 +613,68 @@ async function buildMap(){
   }
 }
 
+// ── Line -> PDF entry map ─────────────────────────────────
+// Built once after PDF loads. Maps lineIdx -> pdfMap entry.
+// Uses a greedy forward pass so each line gets the NEXT unused entry.
+let lineEntryMap = {}; // lineIdx -> pdfMap entry
+
+function buildLineEntryMap(){
+  lineEntryMap = {};
+  if(!pdfMap.length) return;
+  let cursor = 0;
+  lines.forEach((ln, i) => {
+    if(!ln.t) return;
+    const words = ln.t.toLowerCase().split(/\s+/).filter(w=>w.length>2).slice(0,6);
+    if(!words.length) return;
+    // Search forward from cursor, window of 60
+    const end = Math.min(cursor + 60, pdfMap.length);
+    let best=null, bestScore=0, bestIdx=-1;
+    for(let j=cursor; j<end; j++){
+      const et = pdfMap[j].text.toLowerCase();
+      const hits = words.filter(w=>et.includes(w)).length;
+      const score = hits/words.length;
+      if(score>bestScore && score>0.4){ bestScore=score; best=pdfMap[j]; bestIdx=j; }
+    }
+    // If nothing in window, widen search
+    if(!best){
+      for(let j=cursor; j<pdfMap.length; j++){
+        const et = pdfMap[j].text.toLowerCase();
+        const hits = words.filter(w=>et.includes(w)).length;
+        const score = hits/words.length;
+        if(score>bestScore && score>0.4){ bestScore=score; best=pdfMap[j]; bestIdx=j; }
+      }
+    }
+    if(best){
+      lineEntryMap[i] = best;
+      // Advance cursor past this match so next line always goes forward
+      cursor = bestIdx + 1;
+    }
+  });
+  console.log('Line entry map built:', Object.keys(lineEntryMap).length, 'of', lines.length, 'lines mapped');
+}
+
 // ── Tap zones ─────────────────────────────────────────────
 function buildTaps(){
   document.querySelectorAll('.tap-zone').forEach(z=>z.remove());
   const pages=Array.from(document.querySelectorAll('.pdf-page'));
   lines.forEach((ln,i)=>{
-    if(!ln.t)return;
-    const entry=findEntry(ln.t);
-    if(!entry)return;
+    if(!ln.t) return;
+    const entry = lineEntryMap[i];
+    if(!entry) return;
     const pageEl=pages[entry.pageIdx]; if(!pageEl)return;
     const z=document.createElement('div');
     z.className='tap-zone';
     z.style.top=Math.max(0,entry.absY-pageEl.offsetTop-2)+'px';
     z.style.height=Math.max(entry.absH+4,22)+'px';
     z.dataset.idx=i;
-    const handler=()=>{stopSpeech();isPlaying=true;pdfCursor=0;speakFrom(i);};
-    z.addEventListener('click',handler);
-    z.addEventListener('touchend',ev=>{ev.preventDefault();handler();},{passive:false});
+    // Detect tap vs scroll — only trigger if touch didn't move much
+    let touchStartY=0;
+    z.addEventListener('touchstart',ev=>{touchStartY=ev.touches[0].clientY;},{passive:true});
+    z.addEventListener('touchend',ev=>{
+      const moved=Math.abs(ev.changedTouches[0].clientY-touchStartY);
+      if(moved<12){ev.preventDefault();stopSpeech();isPlaying=true;speakFrom(i);}
+    },{passive:false});
+    z.addEventListener('click',()=>{stopSpeech();isPlaying=true;speakFrom(i);});
     pageEl.appendChild(z);
   });
 }
@@ -641,18 +759,19 @@ function findEntryForward(text){
 // ── Highlight ─────────────────────────────────────────────
 function highlight(idx){
   const hl=document.getElementById('hlBar');
-  if(!pdfMap.length){hl.style.display='none';return;}
+  if(!pdfMap.length||!Object.keys(lineEntryMap).length){hl.style.display='none';return;}
   const ln=lines[idx]; if(!ln||!ln.t)return;
-  const entry=findEntryForward(ln.t);
-  if(!entry){return;}
-  const h=Math.min(Math.max(entry.absH,16),44);
+  // Use pre-built map — no searching, no jumping
+  const entry = lineEntryMap[idx];
+  if(!entry){ hl.style.display='none'; return; }
+  const h=Math.min(Math.max(entry.absH,14),42);
   hl.style.display='block';
   hl.style.top=(entry.absY-2)+'px';
   hl.style.height=(h+4)+'px';
-  // Scroll line to ~38% from top
+  // Smooth scroll to keep line at 38% from top
   const pv=document.getElementById('pdfView');
-  pv.scrollTo({top:entry.absY-(pv.clientHeight*0.38),behavior:'smooth'});
-  // Page indicator
+  const target = entry.absY - (pv.clientHeight*0.38);
+  pv.scrollTo({top:Math.max(0,target),behavior:'smooth'});
   document.getElementById('pageNum').textContent=`${entry.pageIdx+1} / ${pdfDoc?pdfDoc.numPages:'?'}`;
 }
 
@@ -887,7 +1006,39 @@ document.getElementById('expandBtn').addEventListener('click',()=>{
 document.getElementById('closeReader').addEventListener('click',closeReaderFn);
 
 // ── Sliders ───────────────────────────────────────────────
-document.getElementById('speedR').addEventListener('input',()=>document.getElementById('speedV').textContent=(+document.getElementById('speedR').value).toFixed(2)+'×');
+document.getElementById('speedR').addEventListener('input',()=>{
+  const v=+document.getElementById('speedR').value;
+  document.getElementById('speedV').textContent=v.toFixed(2)+'×';
+  updateProgress();
+  // Sync preset buttons
+  document.querySelectorAll('.sp-btn').forEach(b=>{
+    b.classList.toggle('on', Math.abs(parseFloat(b.textContent)-v)<0.01);
+  });
+  pSave('speed',v);
+});
+
+function setSpeed(v){
+  document.getElementById('speedR').value=v;
+  document.getElementById('speedV').textContent=v.toFixed(2)+'×';
+  document.querySelectorAll('.sp-btn').forEach(b=>{
+    b.classList.toggle('on', Math.abs(parseFloat(b.textContent)-v)<0.01);
+  });
+  updateProgress();
+  pSave('speed',v);
+  // If EL audio is playing, update playback rate live
+  if(currentAudio)currentAudio.playbackRate=v;
+}
+
+// ── Dark PDF mode ─────────────────────────────────────────
+let darkMode = false;
+function toggleDark(){
+  darkMode=!darkMode;
+  document.getElementById('darkToggle').classList.toggle('on',darkMode);
+  document.getElementById('pageWrap').classList.toggle('darkpdf',darkMode);
+  document.querySelectorAll('.pdf-page').forEach(p=>p.classList.toggle('dark',darkMode));
+  pSave('dark_pdf',darkMode?'1':'0');
+  toast(darkMode?'Dark PDF on':'Dark PDF off');
+}
 document.getElementById('pitchR').addEventListener('input',()=>document.getElementById('pitchV').textContent=(+document.getElementById('pitchR').value).toFixed(2));
 document.getElementById('volR').addEventListener('input',()=>{document.getElementById('volV').textContent=Math.round(document.getElementById('volR').value*100)+'%';if(currentAudio)currentAudio.volume=+document.getElementById('volR').value;});
 
@@ -927,10 +1078,117 @@ window.addEventListener('load',()=>{
   const savedKey=pLoad('el_key');if(savedKey)document.getElementById('elKey').value=savedKey;
   if(savedKey)loadELVoices(true);
   const savedVoice=pLoad('br_voice');if(savedVoice)document.getElementById('voiceSel').value=savedVoice;
+  // Restore speed
+  const savedSpeed=pLoad('speed');
+  if(savedSpeed){setSpeed(parseFloat(savedSpeed));}
+  // Restore dark mode
+  const savedDark=pLoad('dark_pdf');
+  if(savedDark==='1'){
+    // Apply after a tick so PDF pages exist
+    setTimeout(()=>{
+      if(!darkMode)toggleDark();
+    },500);
+  }
 });
 
 // ── Zoom ──────────────────────────────────────────────────
-async function zoom(delta){pdfScale=Math.max(0.6,Math.min(3,pdfScale+delta));if(!pdfDoc)return;toast('Rendering…');await renderPDF();await buildMap();setTimeout(buildTaps,200);}
+async function zoom(delta){pdfScale=Math.max(0.6,Math.min(3,pdfScale+delta));if(!pdfDoc)return;toast('Rendering…');await renderPDF();await buildMap();buildLineEntryMap();setTimeout(buildTaps,200);}
+
+// ── Sleep Timer ───────────────────────────────────────────
+let sleepTimer=null, sleepEnd=0;
+function setSleep(mins){
+  clearTimeout(sleepTimer);
+  document.querySelectorAll('.sp-btn').forEach(b=>{});
+  const status=document.getElementById('sleepStatus');
+  if(mins===0){
+    sleepEnd=0;status.style.display='none';
+    toast('Sleep timer off');return;
+  }
+  sleepEnd=Date.now()+mins*60000;
+  sleepTimer=setTimeout(()=>{
+    stopSpeech();
+    toast('Sleep timer — paused');
+    status.style.display='none';
+  },mins*60000);
+  status.style.display='block';
+  // Update countdown every minute
+  const tick=()=>{
+    if(!sleepEnd)return;
+    const left=Math.max(0,Math.round((sleepEnd-Date.now())/60000));
+    status.textContent=`⏱ Pausing in ${left} min`;
+    if(left>0)setTimeout(tick,30000);
+  };
+  tick();
+  toast(`Sleep timer: ${mins} min`);
+}
+
+// ── Character Filter ──────────────────────────────────────
+let charFilter=null, charFilterOn=false;
+function toggleCharFilter(){
+  charFilterOn=!charFilterOn;
+  document.getElementById('charToggle').classList.toggle('on',charFilterOn);
+  const sel=document.getElementById('charSelect');
+  sel.style.display=charFilterOn?'':'none';
+  if(charFilterOn){
+    // Populate with unique character names
+    const chars=[...new Set(lines.filter(l=>l.type==='char').map(l=>l.t))].sort();
+    sel.innerHTML='<option value="">— All characters —</option>';
+    chars.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);});
+    toast('Pick a character to filter');
+  } else {
+    charFilter=null;
+    // Show all lines
+    document.querySelectorAll('[data-idx]').forEach(z=>z.style.opacity='1');
+    toast('Character filter off');
+  }
+}
+
+function setCharFilter(name){
+  charFilter=name||null;
+  if(!charFilter){document.querySelectorAll('[data-idx]').forEach(z=>z.style.opacity='1');return;}
+  toast(`Filtering: ${charFilter}`);
+  // Find first line of this character
+  const idx=lines.findIndex(l=>l.type==='char'&&l.t===charFilter);
+  if(idx>=0){stopSpeech();isPlaying=true;speakFrom(idx);}
+}
+
+// Override speakFrom to respect character filter
+const _origSpeakFrom = speakFrom;
+// Wrap speakFrom to skip non-matching lines when filter active
+function speakFrom(idx){
+  if(idx>=lines.length){stopSpeech();toast('End of script');return;}
+  // Skip lines that don't belong to filtered character
+  if(charFilter && lines[idx].t){
+    const ln=lines[idx];
+    // Find which character block this line belongs to
+    let charOwner=null;
+    for(let k=idx;k>=0;k--){if(lines[k].type==='char'){charOwner=lines[k].t;break;}}
+    const isCharLine=ln.type==='char'&&ln.t===charFilter;
+    const isDialogue=(ln.type==='dialogue'||ln.type==='paren')&&charOwner===charFilter;
+    if(!isCharLine&&!isDialogue&&ln.t){currentIdx=idx;if(isPlaying)speakFrom(idx+1);return;}
+  }
+  if(!lines[idx].t){currentIdx=idx;if(isPlaying)speakFrom(idx+1);return;}
+  currentIdx=idx;
+  highlight(idx);
+  updateProgress();
+  setPlayBtn(true);setDot('active');
+  if('mediaSession'in navigator)navigator.mediaSession.playbackState='playing';
+  const ln=lines[idx];
+  if(voiceMode==='elevenlabs'){
+    speakEL(idx,()=>{if(isPlaying)speakFrom(idx+1);});
+  } else {
+    const dyn=getDyn(ln.type,+document.getElementById('speedR').value,+document.getElementById('pitchR').value);
+    const go=()=>{
+      const v=voices[parseInt(document.getElementById('voiceSel').value)];
+      const u=new SpeechSynthesisUtterance(ln.sp||ln.t);
+      if(v)u.voice=v;u.rate=dyn.r;u.pitch=dyn.p;u.volume=+document.getElementById('volR').value;
+      u.onend=()=>{if(isPlaying)speakFrom(idx+1);};
+      u.onerror=e=>{if(e.error!=='interrupted'&&isPlaying)speakFrom(idx+1);};
+      speechSynthesis.speak(u);
+    };
+    dyn.pause>100?setTimeout(go,dyn.pause):go();
+  }
+}
 
 // ── Service Worker ────────────────────────────────────────
 if('serviceWorker'in navigator){

@@ -247,11 +247,67 @@ body{font-family:'Inter',sans-serif;color:var(--text);display:flex;flex-directio
 .mini-expand{background:none;border:none;color:var(--dim);font-size:13px;cursor:pointer;padding:4px;flex-shrink:0;}
 
 /* Progress bar */
-#progressWrap{padding:0 18px 4px;cursor:pointer;}
-#progressTrack{height:3px;background:rgba(255,255,255,.1);border-radius:2px;position:relative;overflow:visible;}
-#progressFill{height:100%;background:var(--accent);border-radius:2px;width:0%;transition:width .4s;}
-#progressThumb{position:absolute;right:0;top:50%;transform:translate(50%,-50%);width:12px;height:12px;background:var(--accent);border-radius:50%;display:none;}
-#progressTrack:hover #progressThumb{display:block;}
+#progressWrap{
+  padding:6px 18px 2px;
+  cursor:pointer;
+  touch-action:none;
+  user-select:none;-webkit-user-select:none;
+}
+#progressTrack{
+  height:4px;
+  background:rgba(255,255,255,.12);
+  border-radius:4px;
+  position:relative;
+  overflow:visible;
+}
+#progressFill{
+  height:100%;
+  background:var(--accent);
+  border-radius:4px;
+  width:0%;
+  pointer-events:none;
+}
+#progressThumb{
+  position:absolute;
+  right:0;top:50%;
+  transform:translate(50%,-50%);
+  width:16px;height:16px;
+  background:var(--accent);
+  border-radius:50%;
+  box-shadow:0 0 8px rgba(245,166,35,.5);
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .15s, transform .15s;
+}
+#progressWrap:hover #progressThumb,
+#progressWrap.dragging #progressThumb{
+  opacity:1;
+  transform:translate(50%,-50%) scale(1.2);
+}
+/* Time labels */
+#progressLabels{
+  display:flex;justify-content:space-between;
+  padding:3px 0 0;
+  font-family:'Orbitron',sans-serif;
+  font-size:8px;letter-spacing:.08em;color:var(--dim);
+}
+/* Scrub preview tooltip */
+#scrubTooltip{
+  position:absolute;
+  bottom:18px;
+  transform:translateX(-50%);
+  background:rgba(20,20,20,.95);
+  border:1px solid var(--border);
+  color:var(--text);
+  font-family:'Orbitron',sans-serif;
+  font-size:8px;letter-spacing:.08em;
+  padding:5px 9px;border-radius:8px;
+  pointer-events:none;
+  white-space:nowrap;
+  opacity:0;transition:opacity .15s;
+  z-index:100;
+}
+#scrubTooltip.show{opacity:1;}
 
 /* Full controls panel (slide up) */
 #fullControls{
@@ -379,6 +435,12 @@ input[type=range]{flex:1;accent-color:var(--accent);height:4px;cursor:pointer;}
       <div id="progressTrack">
         <div id="progressFill"></div>
         <div id="progressThumb"></div>
+        <div id="scrubTooltip"></div>
+      </div>
+      <div id="progressLabels">
+        <span id="progCurrent">0:00</span>
+        <span id="progLineCount">— / —</span>
+        <span id="progTotal">0:00</span>
       </div>
     </div>
 
@@ -1470,8 +1532,136 @@ function speakFrom(idx) {
 function updateProgress() {
   const total = lines.filter(l=>l.display).length;
   const done  = lines.slice(0,currentIdx+1).filter(l=>l.display).length;
-  progressFill.style.width = total ? (done/total*100)+'%' : '0%';
+  const pct   = total ? (done/total*100) : 0;
+  progressFill.style.width = pct+'%';
+  // Move thumb to match fill
+  const thumb = document.getElementById('progressThumb');
+  thumb.style.left = pct+'%';
+  thumb.style.right = 'auto';
+  // Update labels
+  document.getElementById('progLineCount').textContent = total ? `${done} / ${total}` : '— / —';
+  // Estimate time remaining (avg ~3 seconds per line at default speed)
+  const rate = +rateR.value || 1;
+  const secPerLine = 3 / rate;
+  const elapsed   = Math.round(done * secPerLine);
+  const remaining = Math.round((total - done) * secPerLine);
+  document.getElementById('progCurrent').textContent = formatTime(elapsed);
+  document.getElementById('progTotal').textContent   = '-' + formatTime(remaining);
 }
+
+function formatTime(secs) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${s.toString().padStart(2,'0')}`;
+}
+
+// ── Scrubber interaction ──────────────────────────────────
+(function initScrubber() {
+  const wrap    = document.getElementById('progressWrap');
+  const track   = document.getElementById('progressTrack');
+  const fill    = document.getElementById('progressFill');
+  const thumb   = document.getElementById('progressThumb');
+  const tooltip = document.getElementById('scrubTooltip');
+  let dragging  = false;
+  let wasPlaying = false;
+
+  function getPctFromEvent(e) {
+    const rect  = track.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  }
+
+  function getLineIdxFromPct(pct) {
+    const displayLines = lines.map((l,i) => l.display ? i : -1).filter(i => i >= 0);
+    if (!displayLines.length) return 0;
+    const targetPos = Math.floor(pct * displayLines.length);
+    return displayLines[Math.min(targetPos, displayLines.length-1)];
+  }
+
+  function showTooltipAt(pct, clientX) {
+    const idx = getLineIdxFromPct(pct);
+    const line = lines[idx];
+    if (!line) return;
+    // Show a snippet of the line text
+    const snippet = (line.display || '').slice(0, 28) + (line.display?.length > 28 ? '…' : '');
+    const total = lines.filter(l=>l.display).length;
+    const done  = lines.slice(0,idx+1).filter(l=>l.display).length;
+    tooltip.textContent = `${Math.round(pct*100)}% · ${snippet}`;
+    // Position tooltip above thumb
+    const rect = track.getBoundingClientRect();
+    const x = Math.max(40, Math.min(rect.width - 40, clientX - rect.left));
+    tooltip.style.left = x + 'px';
+    tooltip.classList.add('show');
+  }
+
+  function scrubTo(pct) {
+    const idx = getLineIdxFromPct(pct);
+    fill.style.width = (pct*100)+'%';
+    thumb.style.left = (pct*100)+'%';
+    thumb.style.right = 'auto';
+    return idx;
+  }
+
+  // Mouse events
+  track.addEventListener('mousedown', e => {
+    dragging = true; wasPlaying = isPlaying;
+    wrap.classList.add('dragging');
+    if (wasPlaying) stopSpeech();
+    const pct = getPctFromEvent(e);
+    scrubTo(pct);
+    showTooltipAt(pct, e.clientX);
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const pct = getPctFromEvent(e);
+    scrubTo(pct);
+    showTooltipAt(pct, e.clientX);
+  });
+  document.addEventListener('mouseup', e => {
+    if (!dragging) return;
+    dragging = false;
+    wrap.classList.remove('dragging');
+    tooltip.classList.remove('show');
+    const pct = getPctFromEvent(e);
+    const idx = scrubTo(pct);
+    currentIdx = idx;
+    resetPdfCursor();
+    updateProgress();
+    if (wasPlaying) { isPlaying=true; speakFrom(idx); }
+    else positionHighlight(idx);
+  });
+
+  // Touch events for mobile
+  track.addEventListener('touchstart', e => {
+    e.preventDefault();
+    dragging = true; wasPlaying = isPlaying;
+    wrap.classList.add('dragging');
+    if (wasPlaying) stopSpeech();
+    const pct = getPctFromEvent(e);
+    scrubTo(pct);
+    showTooltipAt(pct, e.touches[0].clientX);
+  }, { passive: false });
+  document.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    e.preventDefault();
+    const pct = getPctFromEvent(e);
+    scrubTo(pct);
+    showTooltipAt(pct, e.touches[0].clientX);
+  }, { passive: false });
+  document.addEventListener('touchend', e => {
+    if (!dragging) return;
+    dragging = false;
+    wrap.classList.remove('dragging');
+    tooltip.classList.remove('show');
+    const pct = getPctFromEvent(e);
+    const idx = scrubTo(pct);
+    currentIdx = idx;
+    resetPdfCursor();
+    updateProgress();
+    if (wasPlaying) { isPlaying=true; speakFrom(idx); }
+    else positionHighlight(idx);
+  });
+})();
 
 function togglePlay() {
   if (!lines.length) { showToast('Load a script first'); return; }

@@ -375,16 +375,6 @@ input[type=range]{flex:1;accent-color:var(--accent);}
         <span class="p-lbl">Volume</span>
         <div class="sl-row"><input type="range" id="volR" min="0" max="1" step=".05" value="1"/><span class="sl-val" id="volV">100%</span></div>
 
-        <div class="dm-row" style="margin-top:4px;">
-          <span class="dm-lbl">Sleep Timer</span>
-          <div style="display:flex;gap:6px;">
-            <button class="sp-btn" style="flex:none;padding:7px 10px;" onclick="setSleep(20)">20m</button>
-            <button class="sp-btn" style="flex:none;padding:7px 10px;" onclick="setSleep(30)">30m</button>
-            <button class="sp-btn" style="flex:none;padding:7px 10px;" onclick="setSleep(60)">60m</button>
-            <button class="sp-btn" style="flex:none;padding:7px 10px;" id="sleepOffBtn" onclick="setSleep(0)">Off</button>
-          </div>
-        </div>
-        <div id="sleepStatus" style="font-family:'Orbitron',sans-serif;font-size:8px;color:var(--accent2);letter-spacing:.1em;margin-top:4px;display:none;"></div>
       </div>
     </div>
   </div>
@@ -683,7 +673,8 @@ function buildTaps(){
 const EXP=[
   [/\bINT\.\/EXT\.\s*/gi,'Interior Exterior. '],[/\bINT\.\s*/gi,'Interior. '],[/\bEXT\.\s*/gi,'Exterior. '],
   [/\bV\.O\.\s*/gi,'Voice over. '],[/\bO\.S\.\s*/gi,'Off screen. '],[/\bO\.C\.\s*/gi,'Off camera. '],
-  [/\bCONT\.?['']D\b/gi,'Continued'],[/\bP\.O\.V\.\s*/gi,'Point of view. '],[/\bM\.O\.S\.\s*/gi,'without sound. '],
+  [/\(CONT[''’ʼ]?[''’ʼ]?D\)/gi,'Continued'],
+  [/\bCONT[''’ʼ]?D\b/gi,'Continued'],[/\bP\.O\.V\.\s*/gi,'Point of view. '],[/\bM\.O\.S\.\s*/gi,'without sound. '],
 ];
 function expand(t){let s=t;EXP.forEach(([r,v])=>s=s.replace(r,v));return s;}
 
@@ -845,7 +836,8 @@ async function prefetch(idx){
 async function speakEL(idx,onEnd){
   const key=document.getElementById('elKey').value.trim();
   const vid=document.getElementById('elVoice').value;
-  if(!key||!vid){toast('Set EL key & voice');onEnd();return;}
+  if(!key){toast('No API key — paste key and tap Load');onEnd();return;}
+  if(!vid){toast('No voice selected — tap Load first');onEnd();return;}
   // Prefetch next 2
   [idx+1,idx+2].forEach(i=>{if(i<lines.length&&lines[i]?.t)prefetch(i);});
   setDot('loading');
@@ -860,12 +852,58 @@ async function speakEL(idx,onEnd){
   };
   if(elQueue[idx]){const{url,audio}=elQueue[idx];delete elQueue[idx];play(url,audio);return;}
   try{
-    const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}/stream`,{method:'POST',headers:{'xi-api-key':key,'Content-Type':'application/json'},mode:'cors',body:JSON.stringify({text:lines[idx].sp||lines[idx].t,model_id:document.getElementById('elModel').value,voice_settings:{stability:.45,similarity_boost:.82,style:.35,use_speaker_boost:true}})});
-    if(!r.ok)throw new Error(r.status);
+    const text=lines[idx].sp||lines[idx].t;
+    if(!text){onEnd();return;}
+    const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}/stream`,{
+      method:'POST',
+      headers:{'xi-api-key':key,'Content-Type':'application/json'},
+      mode:'cors',
+      body:JSON.stringify({
+        text,
+        model_id:document.getElementById('elModel').value,
+        voice_settings:{stability:.45,similarity_boost:.82,style:.35,use_speaker_boost:true}
+      })
+    });
+    if(!r.ok){
+      // Read the actual error from ElevenLabs
+      let errMsg='EL error';
+      try{
+        const errData=await r.json();
+        const detail=errData?.detail?.message||errData?.detail||errData?.message||r.status;
+        if(r.status===401) errMsg='Invalid API key';
+        else if(r.status===422) errMsg='Voice not found — tap Load';
+        else if(r.status===429) errMsg='Out of credits — upgrade plan';
+        else errMsg=`EL error ${r.status}: ${detail}`;
+      }catch(e2){errMsg=`EL error ${r.status}`;}
+      setDot('idle');
+      toast(errMsg);
+      // Auto-fallback to browser voice so reading continues
+      console.error('EL error, falling back to browser TTS:', errMsg);
+      const u=new SpeechSynthesisUtterance(text);
+      u.volume=+document.getElementById('volR').value;
+      u.rate=+document.getElementById('speedR').value;
+      u.onend=()=>onEnd();
+      u.onerror=()=>onEnd();
+      speechSynthesis.speak(u);
+      return;
+    }
     const blob=await r.blob();
     const url=URL.createObjectURL(blob);
     play(url,new Audio(url));
-  }catch(e){setDot('idle');toast('EL error — check key/quota');onEnd();}
+  }catch(e){
+    console.error('EL fetch error:',e);
+    setDot('idle');
+    toast('Network error — switched to browser voice');
+    // Fallback to browser voice
+    const text=lines[idx].sp||lines[idx].t;
+    if(text){
+      const u=new SpeechSynthesisUtterance(text);
+      u.volume=+document.getElementById('volR').value;
+      u.rate=+document.getElementById('speedR').value;
+      u.onend=()=>onEnd();u.onerror=()=>onEnd();
+      speechSynthesis.speak(u);
+    } else onEnd();
+  }
 }
 
 // ── Playback ──────────────────────────────────────────────
@@ -1071,33 +1109,6 @@ window.addEventListener('load',()=>{
 // ── Zoom ──────────────────────────────────────────────────
 async function zoom(delta){pdfScale=Math.max(0.6,Math.min(3,pdfScale+delta));if(!pdfDoc)return;toast('Rendering…');await renderPDF();await buildMap();buildLineEntryMap();setTimeout(buildTaps,200);}
 
-// ── Sleep Timer ───────────────────────────────────────────
-let sleepTimer=null, sleepEnd=0;
-function setSleep(mins){
-  clearTimeout(sleepTimer);
-  document.querySelectorAll('.sp-btn').forEach(b=>{});
-  const status=document.getElementById('sleepStatus');
-  if(mins===0){
-    sleepEnd=0;status.style.display='none';
-    toast('Sleep timer off');return;
-  }
-  sleepEnd=Date.now()+mins*60000;
-  sleepTimer=setTimeout(()=>{
-    stopSpeech();
-    toast('Sleep timer — paused');
-    status.style.display='none';
-  },mins*60000);
-  status.style.display='block';
-  // Update countdown every minute
-  const tick=()=>{
-    if(!sleepEnd)return;
-    const left=Math.max(0,Math.round((sleepEnd-Date.now())/60000));
-    status.textContent=`⏱ Pausing in ${left} min`;
-    if(left>0)setTimeout(tick,30000);
-  };
-  tick();
-  toast(`Sleep timer: ${mins} min`);
-}
 
 // ── Character Filter ──────────────────────────────────────
 let charFilter=null, charFilterOn=false;

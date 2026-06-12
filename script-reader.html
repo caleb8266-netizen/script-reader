@@ -42,10 +42,12 @@ body{font-family:'Inter',sans-serif;color:var(--text);display:flex;flex-directio
 .open-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
 .lib-btn{
   width:100%;max-width:320px;padding:14px 0;
-  background:transparent;border:1px solid var(--border);border-radius:16px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:16px;
   font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:.15em;
-  color:var(--dim);cursor:pointer;margin-bottom:16px;
+  color:var(--text);cursor:pointer;margin-bottom:16px;
+  transition:all .2s;
 }
+.lib-btn:active{background:rgba(255,255,255,.08);}
 .hint{font-size:11px;color:var(--dim);text-align:center;}
 
 /* LIBRARY */
@@ -176,6 +178,16 @@ select,input.text-in{width:100%;background:var(--panel2);border:1px solid var(--
 input[type=range]{flex:1;accent-color:var(--accent);}
 .sl-val{font-size:10px;color:var(--accent);min-width:36px;text-align:right;font-family:'Orbitron',sans-serif;}
 
+/* Engine badge row */
+#engineRow{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 18px 0;
+}
+.eng-lbl{font-family:'Orbitron',sans-serif;font-size:7px;letter-spacing:.15em;color:var(--dim);text-transform:uppercase;}
+.eng-badge{font-family:'Orbitron',sans-serif;font-size:7px;letter-spacing:.15em;color:var(--accent);text-transform:uppercase;padding:2px 7px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.25);border-radius:6px;}
+.eng-badge.el{color:var(--accent2);background:rgba(79,184,212,.1);border-color:rgba(79,184,212,.25);}
+.eng-voice{font-size:10px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;}
+
 /* Speed presets */
 .speed-presets{display:flex;gap:6px;margin-bottom:12px;}
 .sp-btn{
@@ -236,7 +248,7 @@ input[type=range]{flex:1;accent-color:var(--accent);}
     📄 &nbsp; Open Script
   </button>
   <button class="lib-btn" id="openLibBtn">📚 &nbsp; My Library</button>
-  <div class="hint">PDF · .fountain · .txt and more</div>
+  <div class="hint">PDF · .fountain · .txt · .fdx and more</div>
 </div>
 
 <!-- LIBRARY -->
@@ -296,6 +308,11 @@ input[type=range]{flex:1;accent-color:var(--accent);}
       </div>
     </div>
 
+    <div id="engineRow">
+      <span class="eng-lbl">VOICE</span>
+      <span class="eng-badge" id="engineBadge">BROWSER</span>
+      <span class="eng-voice" id="voiceBadge"></span>
+    </div>
     <div id="controls">
       <!-- Restart -->
       <button class="ctrl sm accent" id="restartBtn" title="Restart">⟳</button>
@@ -337,7 +354,7 @@ input[type=range]{flex:1;accent-color:var(--accent);}
         <div id="elPanel" style="display:none">
           <span class="p-lbl">API Key</span>
           <div class="api-row">
-            <input class="text-in" type="password" id="elKey" placeholder="Paste ElevenLabs API key…" oninput="pSave('el_key',this.value)"/>
+            <input class="text-in" type="password" id="elKey" placeholder="sk-… paste your API key here" oninput="pSave('el_key',this.value)"/>
             <button class="api-go" onclick="loadELVoices(false)">Load</button>
           </div>
           <span class="p-lbl">Voice</span>
@@ -370,6 +387,14 @@ input[type=range]{flex:1;accent-color:var(--accent);}
         <select id="charSelect" style="display:none;margin-bottom:10px;" onchange="setCharFilter(this.value)">
           <option value="">— All characters —</option>
         </select>
+
+        <div class="dm-row" style="margin-top:8px;">
+          <span class="dm-lbl">PDF Zoom</span>
+          <div style="display:flex;gap:6px;">
+            <button class="sp-btn" style="flex:none;padding:7px 14px;" onclick="zoom(-0.15)">− Smaller</button>
+            <button class="sp-btn" style="flex:none;padding:7px 14px;" onclick="zoom(0.15)">+ Larger</button>
+          </div>
+        </div>
         <span class="p-lbl">Pitch <span style="font-size:7px;opacity:.5">(browser only)</span></span>
         <div class="sl-row"><input type="range" id="pitchR" min=".5" max="2" step=".05" value="1"/><span class="sl-val" id="pitchV">1.00</span></div>
         <span class="p-lbl">Volume</span>
@@ -790,20 +815,47 @@ async function loadELVoices(silent){
     if(!r.ok)throw new Error(r.status);
     const data=await r.json();
     elVoices=data.voices||[];
+    if(!elVoices.length){if(!silent)toast('No voices found');return;}
     const sel=document.getElementById('elVoice');
     sel.innerHTML='';
-    elVoices.forEach(v=>{const o=document.createElement('option');o.value=v.voice_id;o.textContent=`${v.name} — ${v.labels?.accent||v.labels?.description||''}`;sel.appendChild(o);});
+    elVoices.forEach(v=>{
+      const o=document.createElement('option');
+      o.value=v.voice_id;
+      o.textContent=v.name+(v.labels?.accent?' — '+v.labels.accent:v.labels?.description?' — '+v.labels.description:'');
+      sel.appendChild(o);
+    });
+    // Try to restore saved voice — if not found pick a good default
     const saved=pLoad('el_voice');
-    if(saved){const i=elVoices.findIndex(v=>v.voice_id===saved);if(i>=0)sel.selectedIndex=i;}
-    else{const i=elVoices.findIndex(v=>/adam|liam|rachel|bella/i.test(v.name));if(i>=0)sel.selectedIndex=i;}
+    let matched=false;
+    if(saved){
+      const i=elVoices.findIndex(v=>v.voice_id===saved);
+      if(i>=0){sel.selectedIndex=i;matched=true;}
+    }
+    if(!matched){
+      const i=elVoices.findIndex(v=>/adam|liam|rachel|bella|brian/i.test(v.name));
+      if(i>=0)sel.selectedIndex=i;
+    }
+    // Save the key and the current voice
     pSave('el_key',key);
-    if(!silent)toast(`${elVoices.length} voices loaded ✓`);
-  }catch(e){if(!silent)toast('Failed — check API key');}
+    const chosen=elVoices[sel.selectedIndex];
+    if(chosen)pSave('el_voice',chosen.voice_id);
+    // Clear queue so stale audio doesn't play
+    clearQueue();
+    if(!silent)toast(`${elVoices.length} voices ✓ — ${chosen?chosen.name:'pick a voice'}`);
+  }catch(e){
+    console.error('loadELVoices error:',e);
+    if(!silent)toast('Failed — check API key');
+  }
 }
 
 document.getElementById('elVoice').addEventListener('change',()=>{
-  const v=elVoices[document.getElementById('elVoice').selectedIndex];
-  if(v)pSave('el_voice',v.voice_id);
+  const sel=document.getElementById('elVoice');
+  const v=elVoices[sel.selectedIndex];
+  if(v){
+    pSave('el_voice',v.voice_id);
+    clearQueue(); // clear prefetched audio from old voice
+    toast(`Voice: ${v.name}`);
+  }
 });
 
 function setMode(m){
@@ -813,6 +865,24 @@ function setMode(m){
   document.getElementById('browserPanel').style.display=m==='browser'?'':'none';
   document.getElementById('elPanel').style.display=m==='elevenlabs'?'':'none';
   pSave('voice_mode',m);
+  // Update badge
+  const badge=document.getElementById('engineBadge');
+  const vbadge=document.getElementById('voiceBadge');
+  if(badge){
+    badge.textContent=m==='elevenlabs'?'ELEVENLABS':'BROWSER';
+    badge.className=m==='elevenlabs'?'eng-badge el':'eng-badge';
+  }
+  if(vbadge){
+    if(m==='elevenlabs'){
+      const sel=document.getElementById('elVoice');
+      const v=elVoices[sel?.selectedIndex];
+      vbadge.textContent=v?v.name:'No voice loaded — tap Load';
+    } else {
+      const sel=document.getElementById('voiceSel');
+      const v=voices[parseInt(sel?.value)];
+      vbadge.textContent=v?v.name.split('(')[0].trim():'';
+    }
+  }
 }
 
 // ── EL prefetch queue ─────────────────────────────────────
@@ -836,8 +906,23 @@ async function prefetch(idx){
 async function speakEL(idx,onEnd){
   const key=document.getElementById('elKey').value.trim();
   const vid=document.getElementById('elVoice').value;
-  if(!key){toast('No API key — paste key and tap Load');onEnd();return;}
-  if(!vid){toast('No voice selected — tap Load first');onEnd();return;}
+  if(!key){
+    toast('No API key — paste key and tap Load');
+    // Fall through to browser voice
+    setMode('browser');
+    onEnd();return;
+  }
+  if(!vid||vid===''){
+    toast('No voice selected — tap Load to fetch voices');
+    setMode('browser');
+    onEnd();return;
+  }
+  // Validate that the vid is a real voice in our loaded list
+  if(elVoices.length>0 && !elVoices.find(v=>v.voice_id===vid)){
+    toast('Voice expired — tap Load again');
+    setMode('browser');
+    onEnd();return;
+  }
   // Prefetch next 2
   [idx+1,idx+2].forEach(i=>{if(i<lines.length&&lines[i]?.t)prefetch(i);});
   setDot('loading');

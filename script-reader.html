@@ -357,7 +357,10 @@ input[type=range]{flex:1;accent-color:var(--accent);}
             <input class="text-in" type="password" id="elKey" placeholder="sk-… paste your API key here" oninput="pSave('el_key',this.value)"/>
             <button class="api-go" onclick="loadELVoices(false)">Load</button>
           </div>
-          <span class="p-lbl">Voice</span>
+          <span class="p-lbl" style="display:flex;align-items:center;justify-content:space-between;">
+            Voice
+            <button onclick="testELVoice()" style="background:rgba(79,184,212,.15);border:1px solid rgba(79,184,212,.3);border-radius:6px;color:var(--accent2);font-family:'Orbitron',sans-serif;font-size:7px;letter-spacing:.1em;padding:3px 8px;cursor:pointer;">TEST</button>
+          </span>
           <select id="elVoice" style="margin-bottom:10px"><option value="">— load key first —</option></select>
           <span class="p-lbl">Model</span>
           <select id="elModel">
@@ -853,10 +856,50 @@ document.getElementById('elVoice').addEventListener('change',()=>{
   const v=elVoices[sel.selectedIndex];
   if(v){
     pSave('el_voice',v.voice_id);
-    clearQueue(); // clear prefetched audio from old voice
+    clearQueue();
     toast(`Voice: ${v.name}`);
+    // Update badge
+    const vbadge=document.getElementById('voiceBadge');
+    if(vbadge) vbadge.textContent=v.name;
   }
 });
+
+// Test EL connection with a short phrase
+async function testELVoice(){
+  const key=document.getElementById('elKey').value.trim();
+  const vid=document.getElementById('elVoice').value;
+  if(!key){toast('Paste API key first');return;}
+  if(!vid){toast('Select a voice first');return;}
+  toast('Testing voice…');
+  try{
+    const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}`,{
+      method:'POST',
+      headers:{'xi-api-key':key,'Content-Type':'application/json'},
+      mode:'cors',
+      body:JSON.stringify({
+        text:'Hello, this is a voice test.',
+        model_id:document.getElementById('elModel').value,
+        voice_settings:{stability:.5,similarity_boost:.8}
+      })
+    });
+    if(!r.ok){
+      if(r.status===401) toast('❌ Invalid API key');
+      else if(r.status===422) toast('❌ Voice ID invalid — tap Load');
+      else if(r.status===429) toast('❌ Out of credits');
+      else toast(`❌ Error ${r.status}`);
+      return;
+    }
+    const blob=await r.blob();
+    const url=URL.createObjectURL(blob);
+    const audio=new Audio(url);
+    audio.volume=+document.getElementById('volR').value;
+    audio.play();
+    audio.onended=()=>{URL.revokeObjectURL(url);toast('✓ ElevenLabs working!');};
+  }catch(e){
+    toast('❌ Network error — check connection');
+    console.error('EL test error:',e);
+  }
+}
 
 function setMode(m){
   voiceMode=m;
@@ -900,28 +943,19 @@ async function prefetch(idx){
     const url=URL.createObjectURL(blob);
     const audio=new Audio(url);audio.load();
     elQueue[idx]={url,audio};
-  }catch(e){console.error('EL prefetch',idx,e);}finally{elFetching.delete(idx);}
+  }catch(e){
+    // Prefetch failed silently — speakEL will retry when needed
+    console.error('EL prefetch failed for line',idx,e.message||e);
+  }finally{elFetching.delete(idx);}
 }
 
 async function speakEL(idx,onEnd){
   const key=document.getElementById('elKey').value.trim();
   const vid=document.getElementById('elVoice').value;
-  if(!key){
-    toast('No API key — paste key and tap Load');
-    // Fall through to browser voice
-    setMode('browser');
-    onEnd();return;
-  }
-  if(!vid||vid===''){
-    toast('No voice selected — tap Load to fetch voices');
-    setMode('browser');
-    onEnd();return;
-  }
-  // Validate that the vid is a real voice in our loaded list
+  if(!key){toast('No API key — paste key and tap Load');onEnd();return;}
+  if(!vid||vid===''){toast('No voice selected — tap Load to fetch voices');onEnd();return;}
   if(elVoices.length>0 && !elVoices.find(v=>v.voice_id===vid)){
-    toast('Voice expired — tap Load again');
-    setMode('browser');
-    onEnd();return;
+    toast('Voice expired — tap Load again');onEnd();return;
   }
   // Prefetch next 2
   [idx+1,idx+2].forEach(i=>{if(i<lines.length&&lines[i]?.t)prefetch(i);});
@@ -950,26 +984,22 @@ async function speakEL(idx,onEnd){
       })
     });
     if(!r.ok){
-      // Read the actual error from ElevenLabs
       let errMsg='EL error';
       try{
         const errData=await r.json();
-        const detail=errData?.detail?.message||errData?.detail||errData?.message||r.status;
-        if(r.status===401) errMsg='Invalid API key';
-        else if(r.status===422) errMsg='Voice not found — tap Load';
-        else if(r.status===429) errMsg='Out of credits — upgrade plan';
-        else errMsg=`EL error ${r.status}: ${detail}`;
-      }catch(e2){errMsg=`EL error ${r.status}`;}
+        if(r.status===401) errMsg='❌ Invalid API key — paste new key & tap Load';
+        else if(r.status===422) errMsg='❌ Voice not found — tap Load again';
+        else if(r.status===429) errMsg='❌ Out of EL credits — upgrade at elevenlabs.io';
+        else if(r.status===403) errMsg='❌ API key lacks permissions';
+        else errMsg=`❌ EL error ${r.status}`;
+      }catch(e2){errMsg=`❌ EL error ${r.status}`;}
+      console.error('EL API error:', r.status, errMsg);
       setDot('idle');
+      // Show error prominently and STOP — don't silently fall back
+      isPlaying=false;
+      setPlayBtn(false);
       toast(errMsg);
-      // Auto-fallback to browser voice so reading continues
-      console.error('EL error, falling back to browser TTS:', errMsg);
-      const u=new SpeechSynthesisUtterance(text);
-      u.volume=+document.getElementById('volR').value;
-      u.rate=+document.getElementById('speedR').value;
-      u.onend=()=>onEnd();
-      u.onerror=()=>onEnd();
-      speechSynthesis.speak(u);
+      onEnd();
       return;
     }
     const blob=await r.blob();
@@ -978,16 +1008,10 @@ async function speakEL(idx,onEnd){
   }catch(e){
     console.error('EL fetch error:',e);
     setDot('idle');
-    toast('Network error — switched to browser voice');
-    // Fallback to browser voice
-    const text=lines[idx].sp||lines[idx].t;
-    if(text){
-      const u=new SpeechSynthesisUtterance(text);
-      u.volume=+document.getElementById('volR').value;
-      u.rate=+document.getElementById('speedR').value;
-      u.onend=()=>onEnd();u.onerror=()=>onEnd();
-      speechSynthesis.speak(u);
-    } else onEnd();
+    isPlaying=false;
+    setPlayBtn(false);
+    toast('❌ Network error — check connection & try again');
+    onEnd();
   }
 }
 

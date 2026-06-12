@@ -354,7 +354,7 @@ input[type=range]{flex:1;accent-color:var(--accent);}
         <div id="elPanel" style="display:none">
           <span class="p-lbl">API Key</span>
           <div class="api-row">
-            <input class="text-in" type="password" id="elKey" placeholder="sk-… paste your API key here" oninput="pSave('el_key',this.value)"/>
+            <input class="text-in" type="text" id="elKey" placeholder="sk_… paste your API key here" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
             <button class="api-go" onclick="loadELVoices(false)">Load</button>
           </div>
           <span class="p-lbl" style="display:flex;align-items:center;justify-content:space-between;">
@@ -810,7 +810,7 @@ loadBrowserVoices();
 document.getElementById('voiceSel').addEventListener('change',()=>pSave('br_voice',document.getElementById('voiceSel').value));
 
 async function loadELVoices(silent){
-  const key=document.getElementById('elKey').value.trim();
+  const key=document.getElementById('elKey').value.trim().replace(/\s+/g,'');
   if(!key){if(!silent)toast('Enter API key');return;}
   if(!silent)toast('Loading voices…');
   try{
@@ -839,7 +839,9 @@ async function loadELVoices(silent){
       if(i>=0)sel.selectedIndex=i;
     }
     // Save the key and the current voice
-    pSave('el_key',key);
+    // Save key only after confirmed working
+    localStorage.setItem('el_key', key);
+    try{ document.cookie=`el_key=${encodeURIComponent(key)};max-age=31536000;path=/`; }catch(e){}
     const chosen=elVoices[sel.selectedIndex];
     if(chosen)pSave('el_voice',chosen.voice_id);
     // Clear queue so stale audio doesn't play
@@ -866,10 +868,12 @@ document.getElementById('elVoice').addEventListener('change',()=>{
 
 // Test EL connection with a short phrase
 async function testELVoice(){
-  const key=document.getElementById('elKey').value.trim();
+  const raw=document.getElementById('elKey').value;
+  const key=raw.trim().replace(/\s+/g,''); // strip all whitespace
   const vid=document.getElementById('elVoice').value;
   if(!key){toast('Paste API key first');return;}
   if(!vid){toast('Select a voice first');return;}
+  console.log('Testing with key:', key.slice(0,6)+'…'+key.slice(-4), 'len:'+key.length);
   toast('Testing voice…');
   try{
     const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}`,{
@@ -1199,7 +1203,7 @@ setInterval(()=>{if(isPlaying&&currentIdx>=0)saveBookmark();},10000);
 window.addEventListener('load',()=>{
   renderLib();
   const savedMode=pLoad('voice_mode');if(savedMode)setMode(savedMode);
-  const savedKey=pLoad('el_key');if(savedKey)document.getElementById('elKey').value=savedKey;
+  const savedKey=localStorage.getItem('el_key')||pLoad('el_key');if(savedKey)document.getElementById('elKey').value=savedKey;
   if(savedKey)loadELVoices(true);
   const savedVoice=pLoad('br_voice');if(savedVoice)document.getElementById('voiceSel').value=savedVoice;
   // Restore speed

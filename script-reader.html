@@ -668,7 +668,6 @@ function buildLineEntryMap(){
       cursor = bestIdx + 1;
     }
   });
-  console.log('Line entry map built:', Object.keys(lineEntryMap).length, 'of', lines.length, 'lines mapped');
 }
 
 // ── Tap zones ─────────────────────────────────────────────
@@ -814,7 +813,8 @@ async function loadELVoices(silent){
   if(!key){if(!silent)toast('Enter API key');return;}
   if(!silent)toast('Loading voices…');
   try{
-    const r=await fetch('https://api.elevenlabs.io/v1/voices',{headers:{'xi-api-key':key},mode:'cors'});
+    const voicesUrl=`https://api.elevenlabs.io/v1/voices?xi_api_key=${encodeURIComponent(key)}`;
+    const r=await fetch(voicesUrl,{headers:{'xi-api-key':key},mode:'cors'});
     if(!r.ok)throw new Error(r.status);
     const data=await r.json();
     elVoices=data.voices||[];
@@ -873,10 +873,11 @@ async function testELVoice(){
   const vid=document.getElementById('elVoice').value;
   if(!key){toast('Paste API key first');return;}
   if(!vid){toast('Select a voice first');return;}
-  console.log('Testing with key:', key.slice(0,6)+'…'+key.slice(-4), 'len:'+key.length);
   toast('Testing voice…');
   try{
-    const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}`,{
+    // Try with key in both header and URL param for max compatibility
+    const testUrl=`https://api.elevenlabs.io/v1/text-to-speech/${vid}?xi_api_key=${encodeURIComponent(key)}`;
+    const r=await fetch(testUrl,{
       method:'POST',
       headers:{'xi-api-key':key,'Content-Type':'application/json'},
       mode:'cors',
@@ -941,7 +942,8 @@ async function prefetch(idx){
   if(!key||!vid)return;
   elFetching.add(idx);
   try{
-    const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}/stream`,{method:'POST',headers:{'xi-api-key':key,'Content-Type':'application/json'},mode:'cors',body:JSON.stringify({text:lines[idx].sp||lines[idx].t,model_id:document.getElementById('elModel').value,voice_settings:{stability:.45,similarity_boost:.82,style:.35,use_speaker_boost:true}})});
+    const pfUrl=`https://api.elevenlabs.io/v1/text-to-speech/${vid}?xi_api_key=${encodeURIComponent(key)}`;
+    const r=await fetch(pfUrl,{method:'POST',headers:{'xi-api-key':key,'Content-Type':'application/json'},mode:'cors',body:JSON.stringify({text:lines[idx].sp||lines[idx].t,model_id:document.getElementById('elModel').value,voice_settings:{stability:.45,similarity_boost:.82,style:.35,use_speaker_boost:true}})});
     if(!r.ok)throw new Error(r.status);
     const blob=await r.blob();
     const url=URL.createObjectURL(blob);
@@ -964,20 +966,25 @@ async function speakEL(idx,onEnd){
   // Prefetch next 2
   [idx+1,idx+2].forEach(i=>{if(i<lines.length&&lines[i]?.t)prefetch(i);});
   setDot('loading');
-  const play=(url,audio)=>{
+  const play=(url,audio,lineIdx)=>{
     currentAudio=audio;
     currentAudio.volume=+document.getElementById('volR').value;
     currentAudio.playbackRate=+document.getElementById('speedR').value;
     setDot('active');
     currentAudio.play().catch(()=>{});
+    // Highlight AFTER audio starts playing — not during fetch
+    currentAudio.onplay=()=>{ highlight(lineIdx); };
+    // Also re-highlight after a short delay in case onplay fires too early
+    setTimeout(()=>{ if(currentIdx===lineIdx) highlight(lineIdx); }, 200);
     currentAudio.onended=()=>{URL.revokeObjectURL(url);onEnd();};
     currentAudio.onerror=()=>{URL.revokeObjectURL(url);onEnd();};
   };
-  if(elQueue[idx]){const{url,audio}=elQueue[idx];delete elQueue[idx];play(url,audio);return;}
+  if(elQueue[idx]){const{url,audio}=elQueue[idx];delete elQueue[idx];play(url,audio,idx);return;}
   try{
     const text=lines[idx].sp||lines[idx].t;
     if(!text){onEnd();return;}
-    const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}/stream`,{
+    const elUrl=`https://api.elevenlabs.io/v1/text-to-speech/${vid}?xi_api_key=${encodeURIComponent(key)}`;
+    const r=await fetch(elUrl,{
       method:'POST',
       headers:{'xi-api-key':key,'Content-Type':'application/json'},
       mode:'cors',
@@ -1008,7 +1015,7 @@ async function speakEL(idx,onEnd){
     }
     const blob=await r.blob();
     const url=URL.createObjectURL(blob);
-    play(url,new Audio(url));
+    play(url,new Audio(url),idx);
   }catch(e){
     console.error('EL fetch error:',e);
     setDot('idle');
@@ -1267,14 +1274,15 @@ function speakFrom(idx){
   }
   if(!lines[idx].t){currentIdx=idx;if(isPlaying)speakFrom(idx+1);return;}
   currentIdx=idx;
-  highlight(idx);
   updateProgress();
   setPlayBtn(true);setDot('active');
   if('mediaSession'in navigator)navigator.mediaSession.playbackState='playing';
   const ln=lines[idx];
   if(voiceMode==='elevenlabs'){
+    // Don't highlight yet — wait until audio actually plays (done in play())
     speakEL(idx,()=>{if(isPlaying)speakFrom(idx+1);});
   } else {
+    highlight(idx); // Browser voice is instant so highlight immediately
     const dyn=getDyn(ln.type,+document.getElementById('speedR').value,+document.getElementById('pitchR').value);
     const go=()=>{
       const v=voices[parseInt(document.getElementById('voiceSel').value)];

@@ -6,8 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
 <meta name="apple-mobile-web-app-title" content="Script Reader"/>
+<meta name="description" content="HammerHead Studios Script Reader — follow along with any screenplay PDF line by line."/>
 <meta name="theme-color" content="#0a0a0a"/>
-<title>Script Reader</title>
+<title>Script Reader — HammerHead Studios</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
@@ -111,12 +112,22 @@ body{font-family:'Inter',sans-serif;color:var(--text);display:flex;flex-directio
 .pdf-page canvas{display:block;}
 #hlBar{
   position:absolute;left:0;right:0;
-  background:rgba(245,166,35,.25);
-  border-top:2px solid rgba(245,166,35,.85);
-  border-bottom:2px solid rgba(245,166,35,.85);
+  background:rgba(245,166,35,.15);
+  border-top:1px solid rgba(245,166,35,.4);
+  border-bottom:1px solid rgba(245,166,35,.4);
   pointer-events:none;z-index:10;display:none;
-  transition:top .3s ease,height .25s ease;
-  box-shadow:0 0 16px rgba(245,166,35,.15);
+  transition:top .25s ease,height .2s ease;
+}
+/* Word highlight — smaller precise box */
+#wordBar{
+  position:absolute;
+  background:rgba(245,166,35,.55);
+  border-radius:3px;
+  pointer-events:none;
+  z-index:11;
+  display:none;
+  transition:left .1s ease,top .1s ease,width .1s ease;
+  box-shadow:0 0 10px rgba(245,166,35,.3);
 }
 .tap-zone{position:absolute;left:0;right:0;z-index:20;cursor:pointer;}
 
@@ -177,6 +188,49 @@ select,input.text-in{width:100%;background:var(--panel2);border:1px solid var(--
 .sl-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
 input[type=range]{flex:1;accent-color:var(--accent);}
 .sl-val{font-size:10px;color:var(--accent);min-width:36px;text-align:right;font-family:'Orbitron',sans-serif;}
+
+/* Loading progress bar */
+#loadProgress{
+  position:fixed;top:0;left:0;right:0;height:3px;
+  background:var(--accent);z-index:9999;
+  width:0%;transition:width .3s ease;
+  box-shadow:0 0 8px rgba(245,166,35,.6);
+  pointer-events:none;
+}
+#loadProgress.done{opacity:0;transition:opacity .5s ease .2s;}
+
+/* Text Mode — clean e-reader overlay */
+#textMode{
+  position:absolute;inset:0;
+  overflow-y:auto;
+  background:#1a1208;
+  display:none;
+  padding:60px 28px 200px;
+  z-index:5;
+  -webkit-overflow-scrolling:touch;
+}
+#textMode.active{display:block;}
+#textMode::-webkit-scrollbar{display:none;}
+.tm-line{
+  font-family:'Courier Prime',monospace;
+  color:#f0e6d0;
+  line-height:1.85;
+  margin-bottom:2px;
+  padding:3px 6px;
+  border-radius:4px;
+  cursor:pointer;
+  transition:background .2s;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+.tm-line.tm-scene{color:#fff;font-weight:700;margin-top:16px;}
+.tm-line.tm-char{text-align:center;color:var(--accent);font-weight:700;margin-top:10px;}
+.tm-line.tm-paren{text-align:center;color:#888;font-style:italic;}
+.tm-line.tm-dialogue{margin-left:60px;margin-right:40px;}
+.tm-line.tm-trans{text-align:right;color:#888;font-style:italic;}
+.tm-line.tm-active{background:rgba(245,166,35,.2);border-left:3px solid var(--accent);}
+.tm-line.tm-spoken{opacity:.35;}
+.tm-word-hl{background:rgba(245,166,35,.5);border-radius:2px;padding:0 1px;}
 
 /* Engine badge row */
 #engineRow{
@@ -248,7 +302,7 @@ input[type=range]{flex:1;accent-color:var(--accent);}
     📄 &nbsp; Open Script
   </button>
   <button class="lib-btn" id="openLibBtn">📚 &nbsp; My Library</button>
-  <div class="hint">PDF · .fountain · .txt · .fdx and more</div>
+  <div class="hint">PDF · .fountain · .txt · .fdx · .md</div>
 </div>
 
 <!-- LIBRARY -->
@@ -258,7 +312,7 @@ input[type=range]{flex:1;accent-color:var(--accent);}
     <button class="lib-hdr-close" id="closeLibBtn">✕</button>
   </div>
   <div class="lib-scroll">
-    <div class="lib-empty" id="libEmpty">No scripts yet — add one below</div>
+    <div class="lib-empty" id="libEmpty">📭 No scripts yet<br><span style="font-size:11px;opacity:.6">Tap Open Script to add one</span></div>
     <div id="libCards"></div>
     <div class="lib-add">
       <input type="file" id="libFile" accept=".pdf,.txt,.fountain,.fdx,.md"/>
@@ -291,7 +345,10 @@ input[type=range]{flex:1;accent-color:var(--accent);}
     <div id="pageNum">— / —</div>
     <div id="pageWrap">
       <div id="hlBar"></div>
+      <div id="wordBar"></div>
     </div>
+    <!-- Text Mode overlay -->
+    <div id="textMode"></div>
   </div>
 
   <div id="player">
@@ -383,6 +440,18 @@ input[type=range]{flex:1;accent-color:var(--accent);}
           <button class="toggle" id="darkToggle" onclick="toggleDark()"></button>
         </div>
 
+        <div class="dm-row" style="margin-top:8px;">
+          <span class="dm-lbl">Text Mode <span style="font-size:7px;opacity:.5">(large readable text)</span></span>
+          <button class="toggle" id="textModeToggle" onclick="toggleTextMode()"></button>
+        </div>
+        <div id="fontSizeRow" style="display:none;">
+          <span class="p-lbl">Font Size</span>
+          <div class="sl-row">
+            <input type="range" id="fontSizeR" min="14" max="36" step="1" value="20"/>
+            <span class="sl-val" id="fontSizeV">20px</span>
+          </div>
+        </div>
+
         <div class="dm-row" style="margin-top:4px;">
           <span class="dm-lbl">Character Filter</span>
           <button class="toggle" id="charToggle" onclick="toggleCharFilter()"></button>
@@ -402,15 +471,19 @@ input[type=range]{flex:1;accent-color:var(--accent);}
         <div class="sl-row"><input type="range" id="pitchR" min=".5" max="2" step=".05" value="1"/><span class="sl-val" id="pitchV">1.00</span></div>
         <span class="p-lbl">Volume</span>
         <div class="sl-row"><input type="range" id="volR" min="0" max="1" step=".05" value="1"/><span class="sl-val" id="volV">100%</span></div>
-
       </div>
     </div>
   </div>
 </div>
 
 <div id="toast"></div>
+<div id="loadProgress"></div>
 
 <script>
+
+// Script Reader — HammerHead Studios
+// Built with Claude · github.com/caleb8266-netizen/script-reader
+
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 // ── State ────────────────────────────────────────────────
@@ -418,13 +491,30 @@ let lines = [], currentIdx = -1, isPlaying = false;
 let voices = [], elVoices = [];
 let voiceMode = 'browser';
 let pdfDoc = null, pdfScale = 1.0;
-let pdfMap = [];   // [{text, absY, absH, pageIdx}]
+let pdfMap = [];      // [{text, absY, absH, pageIdx}] sorted by absY
+let pdfPageIndex = {}; // pageNum -> {start, entries}
+let wordIndex = {};   // first3words -> [pdfMap indices]
 let pdfCursor = 0;
 let currentAudio = null;
 let elQueue = {}, elFetching = new Set();
 let scriptId = null;
 let panelOpen = false;
-let pendingEntry = null; // for resume modal
+let pendingEntry = null;    // for resume modal
+let pendingReupload = null; // for re-upload prompt
+
+// ── Loading progress bar ─────────────────────────────────
+function setProgress(pct){
+  const bar = document.getElementById('loadProgress');
+  if(!bar) return;
+  if(pct >= 100){
+    bar.style.width = '100%';
+    bar.classList.add('done');
+    setTimeout(()=>{ bar.style.width='0%'; bar.classList.remove('done'); }, 800);
+  } else {
+    bar.classList.remove('done');
+    bar.style.width = pct + '%';
+  }
+}
 
 // ── Persist helpers ───────────────────────────────────────
 function pSave(k,v){ try{localStorage.setItem(k,v);}catch(e){} try{document.cookie=`${k}=${encodeURIComponent(v)};max-age=31536000;path=/`;}catch(e){} }
@@ -445,10 +535,12 @@ function renderLib(){
   l.forEach(e=>{
     const d=document.createElement('div');
     d.className='lib-card';
+    const metaBadge = e.metaOnly ? ' <span style="font-size:9px;color:var(--accent2);font-family:Orbitron,sans-serif;">TAP TO REOPEN</span>' : '';
+    const pageInfo = e.pages ? ` · ${e.pages}pp` : '';
     d.innerHTML=`<div class="lib-card-icon">${e.pdf?'📄':'📝'}</div>
     <div class="lib-card-info">
       <div class="lib-card-name">${e.name}</div>
-      <div class="lib-card-meta">${e.pct>0?e.pct+'% complete':'Not started'} · ${e.pdf?'PDF':'Text'}</div>
+      <div class="lib-card-meta">${e.pct>0?e.pct+'% complete':'Not started'}${pageInfo}${metaBadge}</div>
       <div class="lib-prog-track"><div class="lib-prog-fill" style="width:${e.pct||0}%"></div></div>
     </div>
     <button class="lib-card-del" data-id="${e.id}">🗑</button>`;
@@ -462,19 +554,29 @@ function deleteEntry(id){const l=getLib().filter(e=>e.id!==id);setLib(l);renderL
 
 async function openEntry(e){
   closeLib();
+  // For metaOnly entries (large PDFs), prompt user to re-upload the file
+  if(e.pdf && e.metaOnly){
+    showReuploadPrompt(e);
+    return;
+  }
+  // For small text files stored with data
   toast('Loading…');
-  if(e.pdf){
+  if(e.pdf && e.data){
     const buf=b64ToArr(e.data);
     pdfDoc=await pdfjsLib.getDocument({data:buf}).promise;
     scriptId=e.id;
     openReader(e.name);
-    await renderPDF();
+    await new Promise(r=>requestAnimationFrame(r));
+    toast(`Loading ${pdfDoc.numPages} pages…`);
+    const [,rawLines] = await Promise.all([renderPDF(), extractText()]);
+    toast('Building position map…');
     await buildMap();
-    buildLines(await extractText());
+    buildLines(rawLines.map(r=>r.text).join('\n'));
     buildLineEntryMap();
     buildTaps();
+    if(textModeOn) renderTextMode();
     if(e.bm>0) showResume(e);
-    else toast('Tap any line to read from there');
+    else toast(`Ready — ${pdfDoc.numPages} pages · tap any line to start`);
   } else {
     const text=decodeURIComponent(escape(atob(e.data)));
     buildLines(text);
@@ -483,6 +585,20 @@ async function openEntry(e){
     if(e.bm>0) showResume(e);
   }
   renderLib();
+}
+
+// Show re-upload prompt for metaOnly library entries
+function showReuploadPrompt(entry){
+  // Store pending entry so we know to resume after upload
+  pendingReupload = entry;
+  // Show the resume modal with re-upload message
+  document.getElementById('resumeSub').innerHTML =
+    `<strong>${entry.name}</strong><br><br>` +
+    `${entry.pct>0 ? entry.pct+'% complete · ' : ''}${entry.pages||'?'} pages<br><br>` +
+    `Tap below to select the PDF file — your bookmark is saved and will resume automatically.`;
+  document.getElementById('resumeStart').textContent  = 'Cancel';
+  document.getElementById('resumeResume').textContent = '📄 Open PDF';
+  document.getElementById('resumeModal').classList.add('show');
 }
 
 function showResume(e){
@@ -501,21 +617,24 @@ async function handleFile(file){
 
   if(isPdf){
     const buf=await file.arrayBuffer();
-    // Save to library
-    try{
-      const b64=arrToB64(buf);
-      const l=getLib();
-      l.unshift({id,name,data:b64,pdf:true,bm:-1,pct:0});
-      setLib(l);
-    }catch(e){toast('File too large to save in library');}
     pdfDoc=await pdfjsLib.getDocument({data:buf}).promise;
+    const libX=getLib();
+    const existX=libX.find(function(en){return en.name===name&&en.pdf;});
+    if(existX){existX.pages=pdfDoc.numPages;existX.updatedAt=Date.now();setLib(libX);}
+    else{libX.unshift({id:id,name:name,pdf:true,bm:-1,pct:0,pages:pdfDoc.numPages,addedAt:Date.now(),metaOnly:true});setLib(libX);}
     openReader(name);
-    await renderPDF();
+    await new Promise(function(r){requestAnimationFrame(r);});
+    toast('Loading — '+pdfDoc.numPages+' pages');
+    var parRes=await Promise.all([renderPDF(),extractText()]);
+    var rawLinesX=parRes[1];
+    toast('Mapping positions…');
     await buildMap();
-    buildLines(await extractText());
+    buildLines(null, rawLinesX);
     buildLineEntryMap();
     buildTaps();
-    toast('Tap any line to start · ⌃ for controls');
+    if(textModeOn)renderTextMode();
+    if(pendingEntry&&pendingEntry.bm>0){showResume(pendingEntry);pendingEntry=null;}
+    else toast('Ready — tap any line to start');
   } else {
     const fr=new FileReader();
     fr.onload=ev=>{
@@ -552,84 +671,255 @@ function closeReaderFn(){
 
 // ── PDF rendering ─────────────────────────────────────────
 async function renderPDF(){
-  const wrap=document.getElementById('pageWrap');
-  // Remove all except hlBar
-  Array.from(wrap.children).forEach(c=>{if(c.id!=='hlBar')c.remove();});
-  const hlBar=document.getElementById('hlBar');
-  const sw=document.getElementById('pdfView').clientWidth||window.innerWidth;
-  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const wrap = document.getElementById('pageWrap');
+  Array.from(wrap.children).forEach(c => {
+    if(c.id !== 'hlBar' && c.id !== 'wordBar') c.remove();
+  });
+  const hlBar  = document.getElementById('hlBar');
+  const wordBar= document.getElementById('wordBar');
+  const sw = document.getElementById('pdfView').clientWidth || window.innerWidth;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-  for(let p=1;p<=pdfDoc.numPages;p++){
-    const page=await pdfDoc.getPage(p);
-    const base=page.getViewport({scale:1});
-    const fit=(sw/base.width)*pdfScale;
-    const vp=page.getViewport({scale:fit});
-    const dw=Math.floor(vp.width), dh=Math.floor(vp.height);
-
-    const div=document.createElement('div');
-    div.className='pdf-page';
-    div.dataset.page=p;
-    div.dataset.scale=fit;
-    div.style.width=dw+'px';div.style.height=dh+'px';
-
-    const canvas=document.createElement('canvas');
-    canvas.width=Math.floor(dw*dpr);canvas.height=Math.floor(dh*dpr);
-    canvas.style.width=dw+'px';canvas.style.height=dh+'px';
-    const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
-    await page.render({canvasContext:ctx,viewport:vp}).promise;
-
-    div.appendChild(canvas);
-    wrap.insertBefore(div,hlBar);
+  // ── Render pages in batches of 4 (parallel) ──────────────
+  const BATCH = 4;
+  const totalBatches = Math.ceil(pdfDoc.numPages / BATCH);
+  for(let batch = 0; batch < totalBatches; batch++){
+    const start = batch * BATCH + 1;
+    const end   = Math.min(start + BATCH - 1, pdfDoc.numPages);
+    await Promise.all(
+      Array.from({length: end-start+1}, (_,i) => renderPage(start+i, sw, dpr, wrap, hlBar))
+    );
+    setProgress(Math.round(((batch+1)/totalBatches)*50)); // 0-50% for render
   }
+}
+
+async function renderPage(p, sw, dpr, wrap, hlBar){
+  const page = await pdfDoc.getPage(p);
+  const base = page.getViewport({scale:1});
+  const fit  = (sw / base.width) * pdfScale;
+  const vp   = page.getViewport({scale: fit});
+  const dw   = Math.floor(vp.width);
+  const dh   = Math.floor(vp.height);
+
+  const div = document.createElement('div');
+  div.className = 'pdf-page';
+  div.dataset.page  = p;
+  div.dataset.scale = fit;
+  div.style.width   = dw + 'px';
+  div.style.height  = dh + 'px';
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = Math.floor(dw * dpr);
+  canvas.height = Math.floor(dh * dpr);
+  canvas.style.width  = dw + 'px';
+  canvas.style.height = dh + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  await page.render({canvasContext: ctx, viewport: vp}).promise;
+  div.appendChild(canvas);
+  wrap.insertBefore(div, hlBar);
 }
 
 async function extractText(){
-  let txt='';
-  for(let p=1;p<=pdfDoc.numPages;p++){
-    const page=await pdfDoc.getPage(p);
-    const tc=await page.getTextContent();
-    const byY={};
-    tc.items.forEach(item=>{
-      const y=Math.round(item.transform[5]);
-      if(!byY[y])byY[y]=[];
-      byY[y].push(item);
-    });
-    Object.keys(byY).map(Number).sort((a,b)=>b-a).forEach(y=>{
-      const row=byY[y].sort((a,b)=>a.transform[4]-b.transform[4]).map(i=>i.str).join(' ').trim();
-      if(row)txt+=row+'\n';
-    });
-    txt+='\n';
-  }
-  return txt;
-}
+  // Process all pages in parallel batches of 8
+  const BATCH = 8;
+  const pageResults = new Array(pdfDoc.numPages);
 
-async function buildMap(){
-  pdfMap=[];
-  const pages=Array.from(document.querySelectorAll('.pdf-page'));
-  for(let p=1;p<=pdfDoc.numPages;p++){
-    const page=await pdfDoc.getPage(p);
-    const el=pages[p-1]; if(!el) continue;
-    const fit=parseFloat(el.dataset.scale)||pdfScale;
-    const vp=page.getViewport({scale:fit});
-    const tc=await page.getTextContent();
-    const pageTop=el.offsetTop;
-    const byY={};
-    tc.items.forEach(item=>{
-      const tx=pdfjsLib.Util.transform(vp.transform,item.transform);
-      // Use tighter Y grouping (2px) for more accurate line separation
-      const yk=Math.round(tx[5]/2)*2;
-      if(!byY[yk])byY[yk]=[];
-      byY[yk].push({str:item.str,x:tx[4],y:tx[5]-item.height,w:item.width,h:item.height});
-    });
-    Object.keys(byY).map(Number).sort((a,b)=>a-b).forEach(yk=>{
-      const row=byY[yk].sort((a,b)=>a.x-b.x);
-      const txt=row.map(i=>i.str).join(' ').trim();
-      if(!txt)return;
-      const minY=Math.min(...row.map(i=>i.y));
-      const maxY=Math.max(...row.map(i=>i.y+i.h));
-      pdfMap.push({text:txt,absY:pageTop+minY,absH:Math.max(maxY-minY,14),pageIdx:p-1});
-    });
+  // First pass — detect repeating headers/footers to skip them
+  // Sample first 5 pages to find patterns
+  const headerSamples = [];
+  const footerSamples = [];
+  const sampleCount = Math.min(5, pdfDoc.numPages);
+  for(let p=1; p<=sampleCount; p++){
+    const page = await pdfDoc.getPage(p);
+    const vp   = page.getViewport({scale:1});
+    const tc   = await page.getTextContent();
+    const items = tc.items
+      .filter(it=>it.str.trim())
+      .map(it=>({str:it.str, x:it.transform[4], y:vp.height-it.transform[5], fs:it.height||12}))
+      .sort((a,b)=>a.y-b.y);
+    if(items.length>0){
+      // Top 2 lines = potential headers
+      headerSamples.push(items.slice(0,2).map(i=>i.str.trim()).join(' ').toLowerCase());
+      // Bottom 2 lines = potential footers
+      footerSamples.push(items.slice(-2).map(i=>i.str.trim()).join(' ').toLowerCase());
+    }
   }
+  // Find strings that appear in 3+ of 5 samples = repeating header/footer
+  function isRepeating(samples, text){
+    const t = text.toLowerCase();
+    return samples.filter(s=>s.includes(t.slice(0,20))).length >= Math.min(3,samples.length);
+  }
+
+  // Process all pages in parallel batches
+  for(let batch=0; batch < Math.ceil(pdfDoc.numPages/BATCH); batch++){
+    const start = batch * BATCH + 1;
+    const end   = Math.min(start + BATCH - 1, pdfDoc.numPages);
+    await Promise.all(
+      Array.from({length: end-start+1}, async function(_,i){
+        const p    = start + i;
+        const page = await pdfDoc.getPage(p);
+        const vp   = page.getViewport({scale:1});
+        const tc   = await page.getTextContent();
+
+        // Get items with font size info
+        const items = tc.items
+          .filter(it=>it.str.trim())
+          .map(it=>({
+            str: it.str,
+            x:   it.transform[4],
+            y:   vp.height - it.transform[5],
+            fs:  Math.round(it.height || 12), // font size
+            w:   it.width,
+          }))
+          .sort((a,b) => Math.abs(a.y-b.y)<3 ? a.x-b.x : a.y-b.y);
+
+        if(!items.length){ pageResults[p-1]=[]; return; }
+
+        // Detect page top/bottom margins for header/footer removal
+        const minY = items[0].y;
+        const maxY = items[items.length-1].y;
+        const headerZone = minY + (maxY-minY)*0.06; // top 6%
+        const footerZone = maxY - (maxY-minY)*0.06; // bottom 6%
+
+        // Group into lines (within 3px vertically)
+        const groups = [];
+        items.forEach(function(item){
+          const last = groups[groups.length-1];
+          if(last && Math.abs(item.y - last[0].y) < 3) last.push(item);
+          else groups.push([item]);
+        });
+
+        // Detect dominant font size on this page (body text size)
+        const fsSizes = {};
+        items.forEach(function(it){ fsSizes[it.fs]=(fsSizes[it.fs]||0)+1; });
+        const dominantFS = parseInt(Object.keys(fsSizes).sort((a,b)=>fsSizes[b]-fsSizes[a])[0]);
+
+        const pageLines = [];
+        for(let gi=0; gi<groups.length; gi++){
+          const group = groups[gi];
+          group.sort((a,b)=>a.x-b.x);
+          const rawTxt = group.map(function(i){return i.str;}).join(' ').replace(/\s+/g,' ').trim();
+          if(!rawTxt) continue;
+
+          const lineY  = group[0].y;
+          const lineFS = Math.round(group.reduce((s,i)=>s+i.fs,0)/group.length);
+
+          // ── Skip repeating headers/footers ───────────────
+          const isHeader = lineY <= headerZone;
+          const isFooter = lineY >= footerZone;
+          if((isHeader||isFooter) && isRepeating(isHeader?headerSamples:footerSamples, rawTxt)){
+            continue; // skip this line
+          }
+
+          // ── Skip standalone page numbers ──────────────────
+          if(/^\d{1,3}\.?\s*$/.test(rawTxt)) continue;
+          // Skip draft headers like "209 POST FINAL -- 3.3.24"
+          if(/\d+\s+POST\s+FINAL/i.test(rawTxt)) continue;
+          if(/POST\s+FINAL\s+--/i.test(rawTxt)) continue;
+
+          // ── Handle hyphenated line breaks ─────────────────
+          // If previous line ends with hyphen, join it
+          if(pageLines.length>0 && pageLines[pageLines.length-1].text.endsWith('-')){
+            const prev = pageLines[pageLines.length-1];
+            prev.text = prev.text.slice(0,-1) + rawTxt; // join without hyphen
+            continue;
+          }
+
+          // ── Font-size based type hints ────────────────────
+          // Larger than dominant = likely heading; smaller = parenthetical/note
+          let typeHint = 'normal';
+          if(lineFS > dominantFS + 2) typeHint = 'heading';
+          if(lineFS < dominantFS - 2) typeHint = 'small';
+
+          // ── Column detection ──────────────────────────────
+          // Check if this line's X position suggests a second column
+          // (X > 55% of page width = right column in two-column layout)
+          const pageW = vp.width;
+          const lineX = group[0].x;
+          const isRightCol = lineX > pageW * 0.55 && gi > 0;
+
+          pageLines.push({
+            text: rawTxt,
+            page: p,
+            typeHint,
+            isRightCol,
+          });
+        }
+
+        pageResults[p-1] = pageLines;
+      })
+    );
+  }
+  return pageResults.flat();
+}
+async function buildMap(){
+  pdfMap = [];
+  pdfPageIndex = {}; // pageNum -> [start, end] indices in pdfMap
+
+  const pages = Array.from(document.querySelectorAll('.pdf-page'));
+  const BATCH = 8;
+
+  for(let batch=0; batch < Math.ceil(pdfDoc.numPages/BATCH); batch++){
+    const start = batch * BATCH + 1;
+    const end   = Math.min(start + BATCH - 1, pdfDoc.numPages);
+    await Promise.all(
+      Array.from({length: end-start+1}, async (_,i) => {
+        const p   = start + i;
+        const el  = pages[p-1]; if(!el) return;
+        const fit = parseFloat(el.dataset.scale) || pdfScale;
+        const page= await pdfDoc.getPage(p);
+        const vp  = page.getViewport({scale: fit});
+        const tc  = await page.getTextContent();
+        const pageTop = el.offsetTop;
+        // Sort items
+        const items = tc.items
+          .filter(it => it.str.trim())
+          .map(it => {
+            const tx = pdfjsLib.Util.transform(vp.transform, it.transform);
+            return { str:it.str, x:tx[4], y:tx[5]-it.height, h:Math.max(it.height,8) };
+          })
+          .sort((a,b) => Math.abs(a.y-b.y)<4 ? a.x-b.x : a.y-b.y);
+        // Group into lines
+        const groups = [];
+        items.forEach(item => {
+          const last = groups[groups.length-1];
+          if(last && Math.abs(item.y - last[0].y) < 4) last.push(item);
+          else groups.push([item]);
+        });
+        // Build entries — tagged with page number
+        const pageEntries = groups.map(g => {
+          g.sort((a,b)=>a.x-b.x);
+          const txt  = g.map(i=>i.str).join(' ').replace(/\s+/g,' ').trim();
+          if(!txt) return null;
+          const minY = Math.min(...g.map(i=>i.y));
+          const maxY = Math.max(...g.map(i=>i.y+i.h));
+          return { text:txt, absY:pageTop+minY, absH:Math.max(maxY-minY,14), pageIdx:p-1 };
+        }).filter(Boolean);
+        // Store with page index
+        pdfPageIndex[p] = { start: pdfMap.length, entries: pageEntries };
+        pageEntries.forEach(e => pdfMap.push(e));
+      })
+    );
+  }
+
+  setProgress(75); // 75% after map built
+  // Sort pdfMap: primarily by absY, but handle two-column layouts
+  // Items in same Y range but right column come after left column
+  pdfMap.sort(function(a,b){
+    const yDiff = a.absY - b.absY;
+    if(Math.abs(yDiff) > 20) return yDiff; // different rows
+    // Same row — left before right (handled by X in buildMap already)
+    return yDiff;
+  });
+
+  // Build word index for instant lookup: first3words -> [pdfMap indices]
+  wordIndex = {};
+  pdfMap.forEach((entry, idx) => {
+    const key = entry.text.toLowerCase().split(/\s+/).slice(0,3).join(' ');
+    if(!wordIndex[key]) wordIndex[key] = [];
+    wordIndex[key].push(idx);
+  });
 }
 
 // ── Line -> PDF entry map ─────────────────────────────────
@@ -640,50 +930,63 @@ let lineEntryMap = {}; // lineIdx -> pdfMap entry
 function buildLineEntryMap(){
   lineEntryMap = {};
   if(!pdfMap.length) return;
-  let cursor = 0;
+
+  let cursor = 0; // global forward cursor in pdfMap
 
   lines.forEach((ln, i) => {
-    if(!ln.t) return;
+    if(!ln.t || ln.type==='skip') return;
 
-    // Use MORE words for short/repeated lines — helps distinguish repeated names
-    const allWords = ln.t.toLowerCase().split(/\s+/).filter(w=>w.length>1);
-    const words = allWords.slice(0, 10); // up to 10 words
+    const text  = ln.t.trim();
+    const words = text.toLowerCase().split(/\s+/).filter(w=>w.length>1);
     if(!words.length) return;
 
-    // For very short lines (character names, single words) use exact match
-    const isShort = allWords.length <= 2;
+    // ── Strategy 1: Word index lookup (instant) ───────────
+    // Try to find exact match using first 3 words as key
+    const key3 = words.slice(0,3).join(' ');
+    const key2 = words.slice(0,2).join(' ');
+    const candidates = [
+      ...(wordIndex[key3] || []),
+      ...(wordIndex[key2] || []),
+    ].filter(idx => idx >= cursor); // must be AFTER cursor
 
-    // Search forward from cursor with a generous window
-    // Window grows if line is unique, stays tight if line is short/repeated
-    const windowSize = isShort ? 15 : 80;
-    const searchEnd = Math.min(cursor + windowSize, pdfMap.length);
+    let best = null, bestScore = 0, bestIdx = -1;
 
-    let best=null, bestScore=0, bestIdx=-1;
+    if(candidates.length){
+      // Score candidates — prefer closest to cursor
+      candidates.forEach(idx => {
+        const entry = pdfMap[idx];
+        const et    = entry.text.toLowerCase();
+        const hits  = words.filter(w=>et.includes(w)).length;
+        const score = hits/words.length;
+        // Bonus for being close to cursor (avoid jumping far ahead)
+        const proximity = 1 - Math.min((idx-cursor)/200, 0.5);
+        const total = score * 0.7 + proximity * 0.3;
+        if(score > 0.5 && total > bestScore){
+          bestScore=total; best=entry; bestIdx=idx;
+        }
+      });
+    }
 
-    // First pass: tight window forward search
-    for(let j=cursor; j<searchEnd; j++){
-      const et = pdfMap[j].text.toLowerCase();
-      let score;
-      if(isShort){
-        // For short lines, require exact or near-exact match
-        score = et.trim() === ln.t.toLowerCase().trim() ? 1.0 :
-                et.includes(ln.t.toLowerCase().trim()) ? 0.9 : 0;
-      } else {
+    // ── Strategy 2: Linear forward scan (fallback) ───────
+    if(!best){
+      const scanEnd = Math.min(cursor + 100, pdfMap.length);
+      for(let j=cursor; j<scanEnd; j++){
+        const et   = pdfMap[j].text.toLowerCase();
         const hits = words.filter(w=>et.includes(w)).length;
-        score = hits / words.length;
-      }
-      if(score > bestScore && score > 0.45){
-        bestScore=score; best=pdfMap[j]; bestIdx=j;
+        const score= hits/words.length;
+        if(score > bestScore && score > 0.45){
+          bestScore=score; best=pdfMap[j]; bestIdx=j;
+        }
       }
     }
 
-    // Second pass: if nothing found in window, search wider (page breaks etc)
+    // ── Strategy 3: Wider scan for page breaks ────────────
     if(!best){
-      const wideEnd = Math.min(cursor + 200, pdfMap.length);
+      const wideEnd = Math.min(cursor + 300, pdfMap.length);
       for(let j=cursor; j<wideEnd; j++){
-        const et = pdfMap[j].text.toLowerCase();
+        const et   = pdfMap[j].text.toLowerCase();
         const hits = words.filter(w=>et.includes(w)).length;
-        const score = hits / words.length;
+        const score= hits/words.length;
         if(score > bestScore && score > 0.5){
           bestScore=score; best=pdfMap[j]; bestIdx=j;
         }
@@ -692,11 +995,10 @@ function buildLineEntryMap(){
 
     if(best && bestIdx >= 0){
       lineEntryMap[i] = best;
-      // ALWAYS advance cursor — this is the key to preventing backward jumps
       cursor = bestIdx + 1;
     }
-    // If no match found, don't move cursor — next line searches same position
   });
+  setProgress(100); // done!
 }
 
 // ── Tap zones ─────────────────────────────────────────────
@@ -734,20 +1036,59 @@ const EXP=[
 ];
 function expand(t){let s=t;EXP.forEach(([r,v])=>s=s.replace(r,v));return s;}
 
-function classify(raw){
+// Lines to skip during speech (but still show in PDF)
+function shouldSkip(t){
+  if(/^\d+\s+POST\s+FINAL/i.test(t)) return true;
+  if(/POST\s+FINAL\s+--/i.test(t)) return true;
+  if(/^\d{2,4}\.?\s*$/.test(t)) return true;
+  if(/^\d{1,3}\.$/.test(t)) return true;
+  if(/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(t)) return true;
+  if(/^(REVISED|FINAL|PRODUCTION|SHOOTING)\s+DRAFT$/i.test(t)) return true;
+  // Skip lines that are ONLY a scene number
+  if(/^\d{2,4}\s*$/.test(t)) return true;
+  return false;
+}
+
+function cleanForSpeech(t){
+  let s = t.replace(/^\d{2,4}\s+/, '');       // remove leading scene numbers
+  s = s.replace(/\s+\d{2,4}\s*$/, '');        // remove trailing scene numbers
+  s = s.replace(/--\s*\d{1,2}\.\d{1,2}\.\d{2,4}/g, ''); // remove draft dates
+  s = s.replace(/^--\s*/, '').replace(/\s*--$/, '');
+  // Fix hyphenated words that were split across lines (already joined in extract)
+  return s.trim();
+}
+
+// classify now accepts optional typeHint from PDF extraction
+function classify(raw, typeHint){
   const t=raw.trim();
   if(!t)return{t:'',type:'empty'};
-  const sp=expand(t);
-  if(/^(INT\.|EXT\.|INT\/EXT\.)\s/i.test(t)||/^FADE IN:/i.test(t))return{t,sp,type:'scene'};
+  if(shouldSkip(t))return{t,sp:'',type:'skip'};
+
+  const sp=expand(cleanForSpeech(t));
+
+  // Use font-size hint: if extraction flagged as 'heading', trust scene heading check more
+  const likelyHeading = typeHint==='heading';
+
+  if(/^(INT\.|EXT\.|INT\/EXT\.)\s/i.test(t)||/^FADE IN:/i.test(t)||
+     /^\d+\s+(INT\.|EXT\.)/i.test(t)||
+     (likelyHeading && /^[A-Z]/.test(t) && t.length > 10))
+    return{t,sp,type:'scene'};
   if(/^\(.*\)$/.test(t))return{t,sp,type:'paren'};
   if(/^(FADE TO:|CUT TO:|SMASH CUT:|DISSOLVE TO:|FADE OUT\.)/i.test(t))return{t,sp,type:'trans'};
   if(/^[A-Z][A-Z\s\.\-'0-9]{0,30}$/.test(t)&&t.length<45)return{t,sp,type:'char'};
   return{t,sp,type:'action'};
 }
 
-function buildLines(text){
+function buildLines(text, extractedData){
   stopSpeech();
-  lines=text.split('\n').map(r=>classify(r));
+  // If we have rich extraction data (with typeHints), use it
+  if(extractedData && Array.isArray(extractedData)){
+    lines = extractedData
+      .filter(function(r){ return r && r.text !== undefined; })
+      .map(function(r){ return classify(r.text, r.typeHint); });
+  } else {
+    lines=text.split('\n').map(function(r){ return classify(r); });
+  }
   // Dialogue pass
   for(let i=0;i<lines.length;i++){
     if(lines[i].type==='char'){
@@ -804,22 +1145,119 @@ function findEntryForward(text){
 }
 
 // ── Highlight ─────────────────────────────────────────────
+// ── Teleprompter scroll ───────────────────────────────────
+// Keeps the active line at a fixed position (38% from top)
+// Uses smooth continuous scrolling instead of jump scrolling
+let teleScrollTarget = 0;
+let teleScrollRAF = null;
+
+function teleScroll(targetY){
+  teleScrollTarget = Math.max(0, targetY);
+  if(teleScrollRAF) cancelAnimationFrame(teleScrollRAF);
+  const pv = document.getElementById('pdfView');
+  const step = () => {
+    const current = pv.scrollTop;
+    const diff = teleScrollTarget - current;
+    if(Math.abs(diff) < 1){ pv.scrollTop = teleScrollTarget; return; }
+    // Ease toward target — faster for big jumps, slower for small
+    const speed = Math.max(0.08, Math.min(0.18, Math.abs(diff)/800));
+    pv.scrollTop = current + diff * speed;
+    teleScrollRAF = requestAnimationFrame(step);
+  };
+  teleScrollRAF = requestAnimationFrame(step);
+}
+
 function highlight(idx){
   const hl=document.getElementById('hlBar');
-  if(!pdfMap.length||!Object.keys(lineEntryMap).length){hl.style.display='none';return;}
+  const wb=document.getElementById('wordBar');
+  if(!pdfMap.length||!Object.keys(lineEntryMap).length){
+    hl.style.display='none'; wb.style.display='none'; return;
+  }
   const ln=lines[idx]; if(!ln||!ln.t)return;
-  // Use pre-built map — no searching, no jumping
   const entry = lineEntryMap[idx];
   if(!entry){ hl.style.display='none'; return; }
   const h=Math.min(Math.max(entry.absH,14),42);
   hl.style.display='block';
   hl.style.top=(entry.absY-2)+'px';
   hl.style.height=(h+4)+'px';
-  // Smooth scroll to keep line at 38% from top
+  // Hide word bar when moving to new line
+  wb.style.display='none';
+  // Teleprompter scroll — keep line at 38% from top
   const pv=document.getElementById('pdfView');
   const target = entry.absY - (pv.clientHeight*0.38);
-  pv.scrollTo({top:Math.max(0,target),behavior:'smooth'});
+  teleScroll(target);
   document.getElementById('pageNum').textContent=`${entry.pageIdx+1} / ${pdfDoc?pdfDoc.numPages:'?'}`;
+}
+
+// ── Word-by-word highlight ────────────────────────────────
+// Called by onboundary event from Web Speech API
+// Maps word position in spoken text to word position in PDF
+let currentLineEntry = null;
+let currentLineWords = [];
+
+function initWordTracking(idx){
+  const entry = lineEntryMap[idx];
+  if(!entry) return;
+  currentLineEntry = entry;
+  // Split the display text into words with approximate X positions
+  const ln = lines[idx];
+  if(!ln||!ln.t) return;
+  const words = ln.t.trim().split(/\s+/).filter(Boolean);
+  // Estimate word positions across the line width
+  const lineWidth = entry.absH * 6; // rough estimate
+  currentLineWords = words.map((w,i) => ({
+    word: w,
+    fraction: words.length > 1 ? i/(words.length-1) : 0
+  }));
+}
+
+function highlightWord(charIndex, lineIdx){
+  const wb = document.getElementById('wordBar');
+  const entry = lineEntryMap[lineIdx];
+  if(!entry || !wb) return;
+
+  // Find matching pdfMap entries near this line to get word positions
+  // Use the pdfMap text items around this entry's Y position
+  const lineY = entry.absY;
+  const nearby = pdfMap.filter(e =>
+    Math.abs(e.absY - lineY) < entry.absH * 1.5 &&
+    e.pageIdx === entry.pageIdx
+  );
+
+  if(!nearby.length) return;
+
+  // Find the entry that best matches current spoken position
+  const ln = lines[lineIdx];
+  if(!ln||!ln.t) return;
+  const words = ln.t.split(/\s+/);
+  const totalChars = ln.t.length;
+  const progress = Math.min(charIndex / Math.max(totalChars,1), 1);
+  const wordIdx = Math.floor(progress * words.length);
+  const currentWord = words[wordIdx] || words[words.length-1];
+
+  // Find this word in a nearby pdfMap entry
+  let wordEntry = null;
+  for(const e of nearby){
+    if(e.text.toLowerCase().includes(currentWord.toLowerCase())){
+      wordEntry = e; break;
+    }
+  }
+
+  if(!wordEntry) wordEntry = entry;
+
+  // Position word bar
+  const wbH = Math.min(wordEntry.absH + 4, 36);
+  wb.style.display = 'block';
+  wb.style.top = (wordEntry.absY - 1) + 'px';
+  wb.style.height = wbH + 'px';
+  // Approximate X position and width
+  const pageEl = document.querySelectorAll('.pdf-page')[wordEntry.pageIdx];
+  if(!pageEl) return;
+  const pageW = pageEl.offsetWidth;
+  const wordW = Math.max(currentWord.length * 8, 30);
+  const wordX = Math.max(10, (pageW * 0.15) + (progress * pageW * 0.7));
+  wb.style.left = wordX + 'px';
+  wb.style.width = Math.min(wordW, pageW * 0.6) + 'px';
 }
 
 // ── Voices ────────────────────────────────────────────────
@@ -1001,10 +1439,8 @@ async function speakEL(idx,onEnd){
     currentAudio.playbackRate=+document.getElementById('speedR').value;
     setDot('active');
     currentAudio.play().catch(()=>{});
-    // Highlight AFTER audio starts playing — not during fetch
-    currentAudio.onplay=()=>{ highlight(lineIdx); };
-    // Also re-highlight after a short delay in case onplay fires too early
-    setTimeout(()=>{ if(currentIdx===lineIdx) highlight(lineIdx); }, 200);
+    currentAudio.onplay=()=>{ highlight(lineIdx); highlightTextMode(lineIdx); };
+    setTimeout(()=>{ if(currentIdx===lineIdx){ highlight(lineIdx); highlightTextMode(lineIdx); } }, 200);
     currentAudio.onended=()=>{URL.revokeObjectURL(url);onEnd();};
     currentAudio.onerror=()=>{URL.revokeObjectURL(url);onEnd();};
   };
@@ -1215,8 +1651,31 @@ document.getElementById('openFile').addEventListener('change',e=>{if(e.target.fi
 document.getElementById('libFile').addEventListener('change',e=>{if(e.target.files[0]){closeLib();handleFile(e.target.files[0]);}e.target.value='';});
 
 // ── Resume modal ──────────────────────────────────────────
-document.getElementById('resumeStart').addEventListener('click',()=>{document.getElementById('resumeModal').classList.remove('show');currentIdx=-1;toast('Starting from beginning');});
-document.getElementById('resumeResume').addEventListener('click',()=>{document.getElementById('resumeModal').classList.remove('show');if(pendingEntry&&pendingEntry.bm>0){currentIdx=pendingEntry.bm;pdfCursor=0;highlight(currentIdx);updateProgress();toast('Resumed ✓');}pendingEntry=null;});
+document.getElementById('resumeStart').addEventListener('click',function(){
+  document.getElementById('resumeModal').classList.remove('show');
+  document.getElementById('resumeStart').textContent='Start Over';
+  document.getElementById('resumeResume').textContent='Resume';
+  if(pendingReupload){pendingReupload=null;openLibrary();return;}
+  currentIdx=-1;toast('Starting from beginning');
+});;
+document.getElementById('resumeResume').addEventListener('click',function(){
+  document.getElementById('resumeModal').classList.remove('show');
+  document.getElementById('resumeStart').textContent='Start Over';
+  document.getElementById('resumeResume').textContent='Resume';
+  if(pendingReupload){
+    var entry=pendingReupload;pendingReupload=null;
+    var inp=document.createElement('input');
+    inp.type='file';inp.accept='.pdf,.txt,.fountain,.fdx,.md';
+    inp.onchange=function(ev){
+      if(!ev.target.files[0])return;
+      scriptId=entry.id;pendingEntry=entry;
+      handleFile(ev.target.files[0]);
+    };
+    inp.click();return;
+  }
+  if(pendingEntry&&pendingEntry.bm>0){currentIdx=pendingEntry.bm;pdfCursor=0;highlight(currentIdx);updateProgress();toast('Resumed');}
+  pendingEntry=null;
+});;
 
 // ── Media Session ─────────────────────────────────────────
 function setupMediaSession(title){
@@ -1245,18 +1704,24 @@ window.addEventListener('load',()=>{
   // Restore speed
   const savedSpeed=pLoad('speed');
   if(savedSpeed){setSpeed(parseFloat(savedSpeed));}
-  // Restore dark mode
   const savedDark=pLoad('dark_pdf');
-  if(savedDark==='1'){
-    // Apply after a tick so PDF pages exist
-    setTimeout(()=>{
-      if(!darkMode)toggleDark();
-    },500);
-  }
+  if(savedDark==='1'){setTimeout(()=>{if(!darkMode)toggleDark();},500);}
+  const savedTextMode=pLoad('text_mode');
+  if(savedTextMode==='1'){setTimeout(()=>{if(!textModeOn)toggleTextMode();},600);}
 });
 
 // ── Zoom ──────────────────────────────────────────────────
-async function zoom(delta){pdfScale=Math.max(0.6,Math.min(3,pdfScale+delta));if(!pdfDoc)return;toast('Rendering…');await renderPDF();await buildMap();buildLineEntryMap();setTimeout(buildTaps,200);}
+async function zoom(delta){
+  pdfScale=Math.max(0.6,Math.min(3,pdfScale+delta));
+  if(!pdfDoc)return;
+  toast('Re-rendering…');
+  await renderPDF();
+  // Rebuild map after zoom (positions changed)
+  await buildMap();
+  buildLineEntryMap();
+  setTimeout(buildTaps,300);
+  toast('Done');
+}
 
 
 // ── Character Filter ──────────────────────────────────────
@@ -1301,7 +1766,7 @@ function speakFrom(idx){
     const isDialogue=(ln.type==='dialogue'||ln.type==='paren')&&charOwner===charFilter;
     if(!isCharLine&&!isDialogue&&ln.t){currentIdx=idx;if(isPlaying)speakFrom(idx+1);return;}
   }
-  if(!lines[idx].t){currentIdx=idx;if(isPlaying)speakFrom(idx+1);return;}
+  if(!lines[idx].t||lines[idx].type==='skip'){currentIdx=idx;if(isPlaying)speakFrom(idx+1);return;}
   currentIdx=idx;
   updateProgress();
   setPlayBtn(true);setDot('active');
@@ -1311,19 +1776,170 @@ function speakFrom(idx){
     // Don't highlight yet — wait until audio actually plays (done in play())
     speakEL(idx,()=>{if(isPlaying)speakFrom(idx+1);});
   } else {
-    highlight(idx); // Browser voice is instant so highlight immediately
+    highlight(idx);
+    highlightTextMode(idx);
+    initWordTracking(idx);
     const dyn=getDyn(ln.type,+document.getElementById('speedR').value,+document.getElementById('pitchR').value);
     const go=()=>{
       const v=voices[parseInt(document.getElementById('voiceSel').value)];
       const u=new SpeechSynthesisUtterance(ln.sp||ln.t);
       if(v)u.voice=v;u.rate=dyn.r;u.pitch=dyn.p;u.volume=+document.getElementById('volR').value;
-      u.onend=()=>{if(isPlaying)speakFrom(idx+1);};
-      u.onerror=e=>{if(e.error!=='interrupted'&&isPlaying)speakFrom(idx+1);};
+      // Word-by-word highlight via onboundary
+      u.onboundary=(e)=>{
+        if(e.name==='word'){
+          highlightWord(e.charIndex, idx);
+          highlightWordTextMode(e.charIndex, idx);
+        }
+      };
+      u.onend=()=>{
+        document.getElementById('wordBar').style.display='none';
+        if(isPlaying)speakFrom(idx+1);
+      };
+      u.onerror=e=>{
+        document.getElementById('wordBar').style.display='none';
+        if(e.error!=='interrupted'&&isPlaying)speakFrom(idx+1);
+      };
       speechSynthesis.speak(u);
     };
     dyn.pause>100?setTimeout(go,dyn.pause):go();
   }
 }
+
+// ── Text Mode ────────────────────────────────────────────
+let textModeOn = false;
+
+function toggleTextMode(){
+  textModeOn = !textModeOn;
+  document.getElementById('textModeToggle').classList.toggle('on', textModeOn);
+  document.getElementById('fontSizeRow').style.display = textModeOn ? '' : 'none';
+  const tm = document.getElementById('textMode');
+  if(textModeOn){
+    renderTextMode();
+    tm.classList.add('active');
+    toast('Text Mode on — swipe controls still work');
+  } else {
+    tm.classList.remove('active');
+    toast('Text Mode off');
+  }
+  pSave('text_mode', textModeOn?'1':'0');
+}
+
+function renderTextMode(){
+  const tm = document.getElementById('textMode');
+  const fs = document.getElementById('fontSizeR').value+'px';
+  tm.innerHTML = '';
+  lines.forEach((ln, i) => {
+    if(!ln.t || ln.type==='skip') return;
+    const div = document.createElement('div');
+    div.className = 'tm-line tm-'+ln.type;
+    div.style.fontSize = fs;
+    div.textContent = ln.t;
+    div.dataset.idx = i;
+    div.addEventListener('click', ()=>{ stopSpeech(); isPlaying=true; speakFrom(i); });
+    div.addEventListener('touchend', e=>{ e.preventDefault(); stopSpeech(); isPlaying=true; speakFrom(i); }, {passive:false});
+    tm.appendChild(div);
+  });
+}
+
+function highlightTextMode(idx){
+  const tm = document.getElementById('textMode');
+  if(!tm.classList.contains('active')) return;
+  tm.querySelectorAll('.tm-line').forEach(el=>{
+    const i = parseInt(el.dataset.idx);
+    el.classList.remove('tm-active','tm-spoken');
+    if(i < idx) el.classList.add('tm-spoken');
+  });
+  const active = tm.querySelector(`[data-idx="${idx}"]`);
+  if(active){
+    active.classList.add('tm-active');
+    // Teleprompter scroll in text mode
+    const tmTop = active.offsetTop;
+    const target = tmTop - tm.clientHeight * 0.38;
+    tm.scrollTo({top: Math.max(0,target), behavior:'smooth'});
+  }
+}
+
+function highlightWordTextMode(charIndex, idx){
+  const tm = document.getElementById('textMode');
+  if(!tm.classList.contains('active')) return;
+  const active = tm.querySelector(`[data-idx="${idx}"]`);
+  if(!active) return;
+  const ln = lines[idx]; if(!ln||!ln.t) return;
+  const words = ln.t.split(/\s+/);
+  const totalChars = ln.t.length;
+  const progress = Math.min(charIndex/Math.max(totalChars,1),1);
+  const wordIdx = Math.min(Math.floor(progress*words.length), words.length-1);
+  // Rebuild line with word highlighted
+  const html = words.map((w,i)=>
+    i===wordIdx ? `<span class="tm-word-hl">${w}</span>` : w
+  ).join(' ');
+  active.innerHTML = html;
+}
+
+document.getElementById('fontSizeR').addEventListener('input', ()=>{
+  const v = document.getElementById('fontSizeR').value;
+  document.getElementById('fontSizeV').textContent = v+'px';
+  document.querySelectorAll('.tm-line').forEach(el=>el.style.fontSize=v+'px');
+});
+
+// ── Touch gestures ───────────────────────────────────────
+(function(){
+  const pv = document.getElementById('pdfView');
+  let touchStartX=0, touchStartY=0, touchStartTime=0;
+  let lastTap=0;
+
+  pv.addEventListener('touchstart', e=>{
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchStartTime = Date.now();
+  }, {passive:true});
+
+  pv.addEventListener('touchend', e=>{
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    const dt = Date.now() - touchStartTime;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+
+    // Double-tap to pause/resume
+    const now = Date.now();
+    if(absDx < 15 && absDy < 15 && dt < 250){
+      if(now - lastTap < 350){
+        // Double tap!
+        if(isPlaying) stopSpeech();
+        else if(lines.length){ isPlaying=true; speakFrom(currentIdx>=0?currentIdx:0); }
+        lastTap = 0;
+        return;
+      }
+      lastTap = now;
+    } else {
+      lastTap = 0;
+    }
+
+    // Swipe left = skip forward 10 lines
+    if(absDx > 60 && absDx > absDy*2 && dt < 400){
+      if(dx < 0){
+        // Swipe left → forward
+        const was=isPlaying; stopSpeech();
+        let steps=0, idx=currentIdx+1;
+        while(idx<lines.length-1&&steps<10){if(lines[idx].t&&lines[idx].type!=='skip')steps++;if(steps<10)idx++;}
+        idx=Math.min(lines.length-1,idx);
+        currentIdx=idx; updateProgress(); highlight(idx);
+        if(was){isPlaying=true;speakFrom(idx);}
+        toast('→ 10 lines');
+      } else {
+        // Swipe right → back
+        const was=isPlaying; stopSpeech();
+        let steps=0, idx=currentIdx-1;
+        while(idx>0&&steps<10){if(lines[idx].t&&lines[idx].type!=='skip')steps++;if(steps<10)idx--;}
+        idx=Math.max(0,idx);
+        currentIdx=idx; updateProgress(); highlight(idx);
+        if(was){isPlaying=true;speakFrom(idx);}
+        toast('← 10 lines');
+      }
+    }
+  }, {passive:true});
+})();
 
 // ── Service Worker ────────────────────────────────────────
 if('serviceWorker'in navigator){

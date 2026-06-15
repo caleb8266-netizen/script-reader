@@ -616,7 +616,8 @@ async function buildMap(){
     const byY={};
     tc.items.forEach(item=>{
       const tx=pdfjsLib.Util.transform(vp.transform,item.transform);
-      const yk=Math.round(tx[5]/3)*3;
+      // Use tighter Y grouping (2px) for more accurate line separation
+      const yk=Math.round(tx[5]/2)*2;
       if(!byY[yk])byY[yk]=[];
       byY[yk].push({str:item.str,x:tx[4],y:tx[5]-item.height,w:item.width,h:item.height});
     });
@@ -640,33 +641,61 @@ function buildLineEntryMap(){
   lineEntryMap = {};
   if(!pdfMap.length) return;
   let cursor = 0;
+
   lines.forEach((ln, i) => {
     if(!ln.t) return;
-    const words = ln.t.toLowerCase().split(/\s+/).filter(w=>w.length>2).slice(0,6);
+
+    // Use MORE words for short/repeated lines — helps distinguish repeated names
+    const allWords = ln.t.toLowerCase().split(/\s+/).filter(w=>w.length>1);
+    const words = allWords.slice(0, 10); // up to 10 words
     if(!words.length) return;
-    // Search forward from cursor, window of 60
-    const end = Math.min(cursor + 60, pdfMap.length);
+
+    // For very short lines (character names, single words) use exact match
+    const isShort = allWords.length <= 2;
+
+    // Search forward from cursor with a generous window
+    // Window grows if line is unique, stays tight if line is short/repeated
+    const windowSize = isShort ? 15 : 80;
+    const searchEnd = Math.min(cursor + windowSize, pdfMap.length);
+
     let best=null, bestScore=0, bestIdx=-1;
-    for(let j=cursor; j<end; j++){
+
+    // First pass: tight window forward search
+    for(let j=cursor; j<searchEnd; j++){
       const et = pdfMap[j].text.toLowerCase();
-      const hits = words.filter(w=>et.includes(w)).length;
-      const score = hits/words.length;
-      if(score>bestScore && score>0.4){ bestScore=score; best=pdfMap[j]; bestIdx=j; }
-    }
-    // If nothing in window, widen search
-    if(!best){
-      for(let j=cursor; j<pdfMap.length; j++){
-        const et = pdfMap[j].text.toLowerCase();
+      let score;
+      if(isShort){
+        // For short lines, require exact or near-exact match
+        score = et.trim() === ln.t.toLowerCase().trim() ? 1.0 :
+                et.includes(ln.t.toLowerCase().trim()) ? 0.9 : 0;
+      } else {
         const hits = words.filter(w=>et.includes(w)).length;
-        const score = hits/words.length;
-        if(score>bestScore && score>0.4){ bestScore=score; best=pdfMap[j]; bestIdx=j; }
+        score = hits / words.length;
+      }
+      if(score > bestScore && score > 0.45){
+        bestScore=score; best=pdfMap[j]; bestIdx=j;
       }
     }
-    if(best){
+
+    // Second pass: if nothing found in window, search wider (page breaks etc)
+    if(!best){
+      const wideEnd = Math.min(cursor + 200, pdfMap.length);
+      for(let j=cursor; j<wideEnd; j++){
+        const et = pdfMap[j].text.toLowerCase();
+        const hits = words.filter(w=>et.includes(w)).length;
+        const score = hits / words.length;
+        if(score > bestScore && score > 0.5){
+          bestScore=score; best=pdfMap[j]; bestIdx=j;
+        }
+      }
+    }
+
+    if(best && bestIdx >= 0){
       lineEntryMap[i] = best;
-      // Advance cursor past this match so next line always goes forward
+      // ALWAYS advance cursor — this is the key to preventing backward jumps
       cursor = bestIdx + 1;
     }
+    // If no match found, don't move cursor — next line searches same position
   });
 }
 

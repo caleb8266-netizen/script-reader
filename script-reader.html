@@ -1276,7 +1276,9 @@ loadBrowserVoices();
 document.getElementById('voiceSel').addEventListener('change',()=>pSave('br_voice',document.getElementById('voiceSel').value));
 
 async function loadELVoices(silent){
-  const key=document.getElementById('elKey').value.trim().replace(/\s+/g,'');
+  const rawKeyL=document.getElementById('elKey').value.trim();
+  const key=(rawKeyL||localStorage.getItem('el_key')||'').replace(/\s+/g,'');
+  if(!rawKeyL&&key)document.getElementById('elKey').value=key;
   if(!key){if(!silent)toast('Enter API key');return;}
   if(!silent)toast('Loading voices…');
   try{
@@ -1335,8 +1337,9 @@ document.getElementById('elVoice').addEventListener('change',()=>{
 
 // Test EL connection with a short phrase
 async function testELVoice(){
-  const raw=document.getElementById('elKey').value;
-  const key=raw.trim().replace(/\s+/g,''); // strip all whitespace
+  const rawT=document.getElementById('elKey').value.trim();
+  const key=(rawT||localStorage.getItem('el_key')||'').replace(/\s+/g,'');
+  if(!rawT&&key)document.getElementById('elKey').value=key; // strip all whitespace
   const vid=document.getElementById('elVoice').value;
   if(!key){toast('Paste API key first');return;}
   if(!vid){toast('Select a voice first');return;}
@@ -1423,7 +1426,9 @@ async function prefetch(idx){
 }
 
 async function speakEL(idx,onEnd){
-  const key=document.getElementById('elKey').value.trim();
+  const rawKeyS=document.getElementById('elKey').value.trim();
+  const key=(rawKeyS||localStorage.getItem('el_key')||'').replace(/\s+/g,'');
+  if(!rawKeyS&&key)document.getElementById('elKey').value=key;
   const vid=document.getElementById('elVoice').value;
   if(!key){toast('No API key — paste key and tap Load');onEnd();return;}
   if(!vid||vid===''){toast('No voice selected — tap Load to fetch voices');onEnd();return;}
@@ -1698,8 +1703,8 @@ setInterval(()=>{if(isPlaying&&currentIdx>=0)saveBookmark();},10000);
 window.addEventListener('load',()=>{
   renderLib();
   const savedMode=pLoad('voice_mode');if(savedMode)setMode(savedMode);
-  const savedKey=localStorage.getItem('el_key')||pLoad('el_key');if(savedKey)document.getElementById('elKey').value=savedKey;
-  if(savedKey)loadELVoices(true);
+  const savedKey=(localStorage.getItem('el_key')||pLoad('el_key')||'').replace(/\s+/g,'');
+  if(savedKey){document.getElementById('elKey').value=savedKey;loadELVoices(true);}
   const savedVoice=pLoad('br_voice');if(savedVoice)document.getElementById('voiceSel').value=savedVoice;
   // Restore speed
   const savedSpeed=pLoad('speed');

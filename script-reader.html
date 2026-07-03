@@ -958,9 +958,9 @@ function buildLineEntryMap(){
         const et    = entry.text.toLowerCase();
         const hits  = words.filter(w=>et.includes(w)).length;
         const score = hits/words.length;
-        // Bonus for being close to cursor (avoid jumping far ahead)
-        const proximity = 1 - Math.min((idx-cursor)/200, 0.5);
-        const total = score * 0.7 + proximity * 0.3;
+        const dist=idx-cursor;
+        const proximity=dist<20?1.0:dist<60?0.8:dist<150?0.5:0.2;
+        const total=score*0.65+proximity*0.35;
         if(score > 0.5 && total > bestScore){
           bestScore=total; best=entry; bestIdx=idx;
         }
@@ -995,7 +995,9 @@ function buildLineEntryMap(){
 
     if(best && bestIdx >= 0){
       lineEntryMap[i] = best;
-      cursor = bestIdx + 1;
+      cursor = Math.max(cursor, bestIdx + 1);
+    } else {
+      cursor = Math.min(cursor + 1, pdfMap.length - 1);
     }
   });
   setProgress(100); // done!
@@ -1266,9 +1268,23 @@ function loadBrowserVoices(){
   if(!voices.length)return;
   const sel=document.getElementById('voiceSel');
   sel.innerHTML='';
-  voices.forEach((v,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`${v.name} (${v.lang})`;sel.appendChild(o);});
-  const pref=voices.findIndex(v=>v.lang.startsWith('en')&&/natural|premium|enhanced|samantha|daniel|karen|moira|alex/i.test(v.name));
-  if(pref>=0)sel.value=pref;
+  voices.forEach((v,i)=>{
+    const o=document.createElement('option');
+    o.value=i;
+    o.textContent=v.name+' ('+v.lang+')';
+    sel.appendChild(o);
+  });
+  // Restore by name first (more reliable than index)
+  const savedName=pLoad('br_voice_name');
+  if(savedName){
+    const idx=voices.findIndex(v=>v.name===savedName);
+    if(idx>=0){sel.value=idx;return;}
+  }
+  // Default: prefer Daniel Enhanced, then any Enhanced
+  const tryDaniel=voices.findIndex(v=>v.lang.startsWith('en')&&/daniel/i.test(v.name)&&/enhanced|premium/i.test(v.name));
+  if(tryDaniel>=0){sel.value=tryDaniel;return;}
+  const tryEnhanced=voices.findIndex(v=>v.lang.startsWith('en')&&/enhanced|premium/i.test(v.name));
+  if(tryEnhanced>=0)sel.value=tryEnhanced;
 }
 speechSynthesis.addEventListener('voiceschanged',loadBrowserVoices);
 loadBrowserVoices();

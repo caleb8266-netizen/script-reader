@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
@@ -495,6 +497,7 @@ let pdfMap = [];      // [{text, absY, absH, pageIdx}] sorted by absY
 let pdfPageIndex = {}; // pageNum -> {start, entries}
 let wordIndex = {};   // first3words -> [pdfMap indices]
 let pdfCursor = 0;
+let hlCursor = 0;    // runtime highlight cursor — only moves forward during playback
 let currentAudio = null;
 let elQueue = {}, elFetching = new Set();
 let scriptId = null;
@@ -1022,7 +1025,7 @@ function buildTaps(){
     z.addEventListener('touchstart',ev=>{touchStartY=ev.touches[0].clientY;},{passive:true});
     z.addEventListener('touchend',ev=>{
       const moved=Math.abs(ev.changedTouches[0].clientY-touchStartY);
-      if(moved<12){ev.preventDefault();stopSpeech();isPlaying=true;speakFrom(i);}
+      if(moved<12){ev.preventDefault();stopSpeech();hlCursor=0;isPlaying=true;speakFrom(i);}
     },{passive:false});
     z.addEventListener('click',()=>{stopSpeech();isPlaying=true;speakFrom(i);});
     pageEl.appendChild(z);
@@ -1172,12 +1175,34 @@ function teleScroll(targetY){
 function highlight(idx){
   const hl=document.getElementById('hlBar');
   const wb=document.getElementById('wordBar');
-  if(!pdfMap.length||!Object.keys(lineEntryMap).length){
-    hl.style.display='none'; wb.style.display='none'; return;
-  }
+  if(!pdfMap.length){ hl.style.display='none'; if(wb)wb.style.display='none'; return; }
   const ln=lines[idx]; if(!ln||!ln.t)return;
-  const entry = lineEntryMap[idx];
-  if(!entry){ hl.style.display='none'; return; }
+
+  // Try pre-built map first
+  let entry = lineEntryMap[idx];
+
+  // If no pre-built entry OR if we suspect it's wrong (hlCursor is ahead of it),
+  // do a live forward search from hlCursor
+  if(!entry || (entry.absY < pdfMap[hlCursor]?.absY - 50)){
+    const words = ln.t.toLowerCase().split(/\s+/).filter(w=>w.length>2).slice(0,8);
+    if(words.length){
+      const searchEnd = Math.min(hlCursor + 80, pdfMap.length);
+      let best=null, bestScore=0, bestIdx=-1;
+      for(let j=hlCursor; j<searchEnd; j++){
+        const et=pdfMap[j].text.toLowerCase();
+        const hits=words.filter(w=>et.includes(w)).length;
+        const score=hits/words.length;
+        if(score>bestScore&&score>0.4){bestScore=score;best=pdfMap[j];bestIdx=j;}
+      }
+      if(best){entry=best;hlCursor=Math.max(hlCursor,bestIdx+1);}
+    }
+  } else {
+    // Use pre-built but advance hlCursor to match
+    const entryIdx = pdfMap.indexOf(entry);
+    if(entryIdx >= 0) hlCursor = Math.max(hlCursor, entryIdx + 1);
+  }
+
+  if(!entry){ return; }
   const h=Math.min(Math.max(entry.absH,14),42);
   hl.style.display='block';
   hl.style.top=(entry.absY-2)+'px';
@@ -1577,7 +1602,7 @@ function fmt(s){const m=Math.floor(s/60);return`${m}:${(s%60).toString().padStar
   function onEnd(e){
     if(!drag)return;drag=false;wrap.classList.remove('drag');tip.classList.remove('show');
     const p=pct(e.changedTouches?{clientX:e.changedTouches[0].clientX}:e);
-    setScrub(p);const idx=idxFrom(p);currentIdx=idx;pdfCursor=0;updateProgress();
+    setScrub(p);const idx=idxFrom(p);currentIdx=idx;pdfCursor=0;hlCursor=0;updateProgress();
     if(wasPlay){isPlaying=true;speakFrom(idx);}else{highlight(idx);}
   }
   track.addEventListener('mousedown',onStart);
@@ -1596,7 +1621,7 @@ document.getElementById('playBtn').addEventListener('click',()=>{
 });
 
 document.getElementById('restartBtn').addEventListener('click',()=>{
-  stopSpeech();currentIdx=-1;pdfCursor=0;
+  stopSpeech();currentIdx=-1;pdfCursor=0;hlCursor=0;
   document.getElementById('hlBar').style.display='none';
   document.getElementById('pdfView').scrollTo({top:0,behavior:'smooth'});
   updateProgress();toast('Back to beginning');
